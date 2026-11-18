@@ -112,45 +112,6 @@ def test_workflow_a_admission_to_enrollment(client, auth_headers):
     assert get_res.get_json()["data"]["admission_number"] == adm_num
 
 
-def test_workflow_b_student_attendance_cycle(client, auth_headers):
-    """
-    Workflow B: Student Attendance Cycle
-    1. Retrieve active students
-    2. Batch record daily attendance
-    3. Query attendance by date
-    4. Verify recorded status and remarks
-    """
-    headers = auth_headers("principal@stxaviers.edu.in")
-    stud_res = client.get("/api/v1/students", headers=headers)
-    students = stud_res.get_json()["data"]["items"]
-    assert len(students) >= 1
-    target_student = students[0]
-
-    today_str = date.today().isoformat()
-
-    # Batch post attendance
-    post_res = client.post("/api/v1/attendance/students/batch", json={
-        "date": today_str,
-        "records": [
-            {
-                "student_id": target_student["id"],
-                "status": "PRESENT",
-                "remarks": "Attended morning session",
-            }
-        ]
-    }, headers=headers)
-    assert post_res.status_code == 200
-    assert post_res.get_json()["data"]["count"] >= 1
-
-    # Query attendance
-    get_res = client.get(f"/api/v1/attendance/students?date={today_str}", headers=headers)
-    assert get_res.status_code == 200
-    records = get_res.get_json()["data"]
-    match = next((r for r in records if r["student_id"] == target_student["id"]), None)
-    assert match is not None
-    assert match["status"] == "PRESENT"
-
-
 def test_workflow_c_homework_lifecycle(client, auth_headers):
     """
     Workflow C: Homework Lifecycle

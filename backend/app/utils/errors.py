@@ -30,6 +30,9 @@ def register_error_handlers(app):
 
     @app.errorhandler(APIException)
     def handle_api_exception(error):
+        # Never keep half-applied changes from a request that failed validation.
+        from app.extensions import db
+        db.session.rollback()
         return jsonify(error.to_dict()), error.status_code
 
     @app.errorhandler(IntegrityError)

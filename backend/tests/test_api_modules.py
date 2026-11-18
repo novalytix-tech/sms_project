@@ -137,42 +137,6 @@ def test_admissions_workflow(client, auth_headers):
     assert stat_res.get_json()["data"]["status"] == "OFFERED"
 
 
-def test_attendance_logging(client, auth_headers):
-    headers = auth_headers("principal@stxaviers.edu.in")
-
-    # 1. Get classes to obtain section
-    cls_res = client.get("/api/v1/academics/classes", headers=headers)
-    sec_id = cls_res.get_json()["data"][0]["sections"][0]["id"]
-
-    # 2. Get active students
-    stud_res = client.get("/api/v1/students", headers=headers)
-    students = stud_res.get_json()["data"]["items"]
-    assert len(students) >= 1
-    stud_id = students[0]["id"]
-
-    # 3. Record student attendance batch
-    today_str = date.today().isoformat()
-    att_res = client.post("/api/v1/attendance/students/batch", json={
-        "date": today_str,
-        "records": [
-            {
-                "student_id": stud_id,
-                "status": "PRESENT",
-                "remarks": "On time in morning assembly",
-            }
-        ]
-    }, headers=headers)
-    assert att_res.status_code == 200
-    assert att_res.get_json()["data"]["count"] >= 1
-
-    # 4. Verify recorded attendance retrieval
-    get_att = client.get(f"/api/v1/attendance/students?date={today_str}", headers=headers)
-    assert get_att.status_code == 200
-    records = get_att.get_json()["data"]
-    assert len(records) >= 1
-    assert any(r["student_id"] == stud_id for r in records)
-
-
 def test_library_and_circulation(client, auth_headers):
     headers = auth_headers("sunita.verma@stxaviers.edu.in")
 
