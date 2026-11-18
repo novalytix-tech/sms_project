@@ -778,6 +778,29 @@ def seed_database(app=None):
                 payment_terms_days=30
             ))
 
+        # -------------------------------------------------------------
+        # 13. Demo fee invoices (local development only)
+        # -------------------------------------------------------------
+        from app.models import FeeInvoice, FeeInvoiceItem
+        for idx, stud in enumerate(Student.query.filter_by(institution_id=inst.id)
+                                   .order_by(Student.admission_number).limit(12).all()):
+            if FeeInvoice.query.filter_by(student_id=stud.id).first():
+                continue
+            for term, due, amount in (("Term 1", date(2026, 7, 15), Decimal("18500.00")),
+                                      ("Term 2", date(2027, 1, 15), Decimal("18500.00"))):
+                paid = amount if (term == "Term 1" and idx % 3 == 0) else Decimal("0.00")
+                inv = FeeInvoice(
+                    institution_id=inst.id,
+                    invoice_number=f"INV-2026-{stud.admission_number[-4:]}-{term[-1]}",
+                    student_id=stud.id, category="Tuition", academic_year="2026-2027",
+                    subtotal=amount, discount_amount=Decimal("0"), total_amount=amount,
+                    paid_amount=paid, balance_amount=amount - paid,
+                    status="PAID" if paid else "UNPAID", issue_date=date(2026, 4, 1), due_date=due,
+                )
+                db.session.add(inv)
+                db.session.flush()
+                db.session.add(FeeInvoiceItem(invoice_id=inv.id, fee_head=f"Tuition Fee - {term}", amount=amount))
+
         # Commit all seeded data
         db.session.commit()
         print("[OK] Database seeding completed successfully! Exactly 30 students and supporting accounts verified.")

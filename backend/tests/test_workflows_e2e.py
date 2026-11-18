@@ -346,12 +346,12 @@ def test_workflow_e_fee_management_and_ledger(client, auth_headers):
     # Pay partial
     pay_res = client.post(f"/api/v1/finance/invoices/{inv.id}/pay", json={
         "amount": 2000.0,
-        "payment_method": "NET_BANKING",
+        "payment_method": "Net Banking",
         "transaction_reference": f"NB-REF-{uuid.uuid4().hex[:6]}",
     }, headers=headers)
     assert pay_res.status_code == 201
     pay_data = pay_res.get_json()["data"]
-    assert pay_data["paid_amount"] >= 2000.0
+    assert pay_data["invoice"]["paidAmount"] >= 2000.0
 
     # Verify ledger entry
     trans = FinancialTransaction.query.filter_by(institution_id=inst.id).order_by(FinancialTransaction.entry_date.desc()).first()

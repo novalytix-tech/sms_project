@@ -29,6 +29,8 @@ class FeeStructure(TenantModel):
     name: Mapped[str] = mapped_column(String(100), nullable=False)
     term_frequency: Mapped[str] = mapped_column(String(30), default="ANNUAL", nullable=False)
     due_date: Mapped[date] = mapped_column(Date, nullable=False)
+    category: Mapped[str] = mapped_column(String(50), default="Tuition", server_default="Tuition", nullable=False)
+    allow_partial: Mapped[bool] = mapped_column(Boolean, default=True, server_default="true", nullable=False)
 
     academic_year: Mapped["AcademicYear"] = relationship("AcademicYear")
     class_level: Mapped["ClassLevel"] = relationship("ClassLevel")
@@ -73,12 +75,17 @@ class FeeInvoice(TenantModel):
         nullable=False,
         index=True,
     )
-    fee_structure_id: Mapped[uuid.UUID] = mapped_column(
+    fee_structure_id: Mapped[Optional[uuid.UUID]] = mapped_column(
         UUID(as_uuid=True),
         ForeignKey("fee_structures.id", ondelete="RESTRICT"),
-        nullable=False,
+        nullable=True,
         index=True,
     )
+    category: Mapped[str] = mapped_column(String(50), default="Tuition", server_default="Tuition", nullable=False)
+    academic_year: Mapped[Optional[str]] = mapped_column(String(20), nullable=True)
+    discount_reason: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
+    notes: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    allow_partial: Mapped[bool] = mapped_column(Boolean, default=True, server_default="true", nullable=False)
     subtotal: Mapped[Decimal] = mapped_column(Numeric(12, 2), nullable=False)
     discount_amount: Mapped[Decimal] = mapped_column(Numeric(12, 2), default=Decimal("0.00"), nullable=False)
     adjustment_amount: Mapped[Decimal] = mapped_column(Numeric(12, 2), default=Decimal("0.00"), nullable=False)
@@ -151,6 +158,7 @@ class FeePayment(BaseModel):
         nullable=True,
     )
     receipt_url: Mapped[Optional[str]] = mapped_column(String(500), nullable=True)
+    remarks: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
 
     invoice: Mapped["FeeInvoice"] = relationship("FeeInvoice", back_populates="payments")
     recorder: Mapped[Optional["User"]] = relationship("User")
