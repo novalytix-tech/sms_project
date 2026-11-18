@@ -4,8 +4,10 @@
 // ==========================================
 
 import React, { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react';
+import { useAuth, useClerk } from '@clerk/react';
 import { User, UserRole, SchoolSettings, Student, AppNotification } from '../types';
-import { DEMO_USERS } from '../data/seedData';
+import { LEGACY_REFERENCE_IDS } from '../data/legacyReferenceIds';
+import { httpClient } from '../services/api/httpClient';
 import { ERPStorage } from '../services/storage';
 import { settingsService } from '../services/settingsService';
 import { noticeService } from '../services/noticeService';
@@ -14,7 +16,6 @@ import { notificationService } from '../services/notificationService';
 import { leaveService } from '../services/leaveService';
 import { feeService } from '../services/feeService';
 import { studentService } from '../services/studentService';
-import { downloadJSONBackup } from '../utils/export';
 
 export interface ToastMessage {
   id: string;
@@ -27,19 +28,15 @@ interface ERPContextType {
   currentUser: User;
   currentRole: UserRole;
   isAuthenticated: boolean;
-  login: (role: UserRole, customUser?: User) => void;
+  authStatus: AuthStatus;
+  authError: string | null;
   logout: () => void;
-  switchRole: (role: UserRole) => void;
   schoolSettings: SchoolSettings;
   updateSchoolSettings: (updates: Partial<SchoolSettings>) => void;
   refreshStore: () => void;
-  resetToDemoData: () => void;
-  exportBackup: () => void;
-  restoreFromJSON: (jsonData: any) => boolean;
 
   activeWorkspace: 'academic' | 'library';
   setActiveWorkspace: (ws: 'academic' | 'library') => void;
-  switchUser: (user: User) => void;
 
   // Counts & indicators
   unreadNoticesCount: number;
@@ -63,36 +60,88 @@ interface ERPContextType {
   removeToast: (id: string) => void;
 }
 
+type AuthStatus = 'loading' | 'signed_out' | 'ready' | 'error';
+
+interface BackendProfile {
+  id: string;
+  email: string;
+  full_name: string;
+  phone?: string | null;
+  avatar_url?: string | null;
+  roles: UserRole[];
+  institution_id: string | null;
+}
+
+const ROLE_PRIORITY: UserRole[] = ['super_admin', 'school_admin', 'teacher', 'parent', 'student', 'supplier'];
+
+const SIGNED_OUT_USER: User = { id: '', name: '', email: '', role: 'student' };
+
+function toUser(p: BackendProfile): User {
+  const role = ROLE_PRIORITY.find(r => p.roles.includes(r)) || 'student';
+  return {
+    id: p.id,
+    name: p.full_name,
+    email: p.email,
+    role,
+    phone: p.phone || undefined,
+    photoUrl: p.avatar_url || undefined,
+    avatar: p.full_name.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase(),
+    // Modules that still run on the browser-side demo store use the local school id.
+    institutionId: role === 'super_admin' ? undefined : 'inst-1',
+    referenceId: LEGACY_REFERENCE_IDS[role],
+  };
+}
+
 const ERPContext = createContext<ERPContextType | undefined>(undefined);
 
 export const ERPProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  // Store active session state (defaults to false so the landing/login page opens first on initial visit)
-  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(() => {
-    return sessionStorage.getItem('nts_erp_authenticated') === 'true';
-  });
+  const { isLoaded, isSignedIn, getToken } = useAuth();
+  const { signOut } = useClerk();
+  const [profile, setProfile] = useState<BackendProfile | null>(null);
+  const [authError, setAuthError] = useState<string | null>(null);
 
-  // Store active role in localStorage or default to 'school_admin'
-  const [currentRole, setCurrentRole] = useState<UserRole>(() => {
-    const saved = localStorage.getItem('nts_erp_active_role') as UserRole;
-    return saved && DEMO_USERS[saved] ? saved : 'school_admin';
-  });
+  // Every API call asks Clerk for a fresh short-lived session token.
+  useEffect(() => {
+    httpClient.setTokenGetter(() => getToken());
+  }, [getToken]);
 
-  const [currentUser, setCurrentUser] = useState<User>(() => {
-    const customUserStr = localStorage.getItem('nts_erp_current_user');
-    if (customUserStr) {
-      try {
-        const parsed = JSON.parse(customUserStr);
-        if (parsed) {
-          // Self-heal: ensure institutionId is present for school-level roles
-          if (parsed.role !== 'super_admin' && !parsed.institutionId) {
-            parsed.institutionId = 'inst-1';
-          }
-          return parsed;
-        }
-      } catch {}
+  // Load the school profile (roles, institution) for the signed-in Clerk user.
+  useEffect(() => {
+    if (!isLoaded) return;
+    if (!isSignedIn) {
+      setProfile(null);
+      setAuthError(null);
+      return;
     }
-    return DEMO_USERS[currentRole] || DEMO_USERS.school_admin;
-  });
+    let cancelled = false;
+    httpClient.get<BackendProfile>('/auth/me').then(res => {
+      if (cancelled) return;
+      if (res.success && res.data) {
+        setProfile(res.data);
+        setAuthError(null);
+      } else {
+        setProfile(null);
+        setAuthError(res.error?.message || 'Could not load your school account.');
+      }
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [isLoaded, isSignedIn]);
+
+  const authStatus: AuthStatus = !isLoaded
+    ? 'loading'
+    : !isSignedIn
+      ? 'signed_out'
+      : profile
+        ? 'ready'
+        : authError
+          ? 'error'
+          : 'loading';
+  const isAuthenticated = authStatus === 'ready';
+  const currentUser = useMemo(() => (profile ? toUser(profile) : SIGNED_OUT_USER), [profile]);
+  const currentRole = currentUser.role;
+
   const [schoolSettings, setSchoolSettings] = useState<SchoolSettings>(() => settingsService.get());
   const [storeVersion, setStoreVersion] = useState(0);
 
@@ -105,10 +154,12 @@ export const ERPProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setSchoolSettings(settingsService.get());
   }, []);
 
-  // Hydrate from PostgreSQL 18 backend on load
+  // Hydrate shared records from the backend for staff accounts.
   useEffect(() => {
-    ERPStorage.syncFromBackend();
-  }, []);
+    if (isAuthenticated && ['super_admin', 'school_admin', 'teacher'].includes(currentRole)) {
+      ERPStorage.syncFromBackend();
+    }
+  }, [isAuthenticated, currentRole]);
 
   // Listen to cross-service or custom storage updates
   useEffect(() => {
@@ -121,44 +172,18 @@ export const ERPProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     };
   }, [refreshStore]);
 
-  const login = useCallback((role: UserRole, customUser?: User) => {
-    const demoUser = DEMO_USERS[role] || DEMO_USERS.school_admin;
-    const userToSet: User = customUser
-      ? {
-          ...demoUser,
-          ...customUser,
-          role,
-          institutionId: customUser.institutionId || (role === 'super_admin' ? undefined : 'inst-1'),
-          referenceId: customUser.referenceId || demoUser.referenceId,
-        }
-      : demoUser;
-
-    setCurrentRole(role);
-    setCurrentUser(userToSet);
-    setIsAuthenticated(true);
-    sessionStorage.setItem('nts_erp_authenticated', 'true');
-    localStorage.setItem('nts_erp_active_role', role);
-    localStorage.setItem('nts_erp_authenticated', 'true');
-    localStorage.setItem('nts_erp_current_user', JSON.stringify(userToSet));
-  }, []);
-
   const logout = useCallback(() => {
-    setIsAuthenticated(false);
-    sessionStorage.removeItem('nts_erp_authenticated');
-    localStorage.setItem('nts_erp_authenticated', 'false');
-  }, []);
+    setProfile(null);
+    signOut({ redirectUrl: '/login' });
+  }, [signOut]);
 
-  const switchRole = useCallback((newRole: UserRole) => {
-    if (DEMO_USERS[newRole]) {
-      setCurrentRole(newRole);
-      setCurrentUser(DEMO_USERS[newRole]);
-      localStorage.removeItem('nts_erp_current_user');
-      setIsAuthenticated(true);
-      sessionStorage.setItem('nts_erp_authenticated', 'true');
-      localStorage.setItem('nts_erp_active_role', newRole);
-      localStorage.setItem('nts_erp_authenticated', 'true');
-    }
-  }, []);
+  useEffect(() => {
+    const onExpired = () => {
+      if (isSignedIn) setAuthError('Your session has expired. Please sign in again.');
+    };
+    window.addEventListener('nts_erp_auth_expired', onExpired);
+    return () => window.removeEventListener('nts_erp_auth_expired', onExpired);
+  }, [isSignedIn]);
 
   const [activeWorkspace, setActiveWorkspaceState] = useState<'academic' | 'library'>(() => {
     return (localStorage.getItem('nts_erp_active_workspace') as 'academic' | 'library') || 'academic';
@@ -169,38 +194,10 @@ export const ERPProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     localStorage.setItem('nts_erp_active_workspace', ws);
   }, []);
 
-  const switchUser = useCallback((user: User) => {
-    setCurrentUser(user);
-    setCurrentRole(user.role);
-    localStorage.setItem('nts_erp_current_user', JSON.stringify(user));
-    localStorage.setItem('nts_erp_active_role', user.role);
-    setIsAuthenticated(true);
-    sessionStorage.setItem('nts_erp_authenticated', 'true');
-    refreshStore();
-  }, [refreshStore]);
-
   const updateSchoolSettings = useCallback((updates: Partial<SchoolSettings>) => {
     const updated = settingsService.update(updates);
     setSchoolSettings({ ...updated });
     refreshStore();
-  }, [refreshStore]);
-
-  const resetToDemoData = useCallback(() => {
-    ERPStorage.reset();
-    refreshStore();
-  }, [refreshStore]);
-
-  const exportBackup = useCallback(() => {
-    const store = ERPStorage.get();
-    downloadJSONBackup(store, `School_ERP_NTS_Backup_${store.settings.schoolName.replace(/\s+/g, '_')}`);
-  }, []);
-
-  const restoreFromJSON = useCallback((jsonData: any): boolean => {
-    const ok = ERPStorage.restore(jsonData);
-    if (ok) {
-      refreshStore();
-    }
-    return ok;
   }, [refreshStore]);
 
   // Derived indicator counts
@@ -255,9 +252,7 @@ export const ERPProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       (currentUser.id && s.parentId === currentUser.id) ||
       (currentUser.email && s.parentEmail && s.parentEmail.toLowerCase() === currentUser.email.toLowerCase())
     );
-    if (matched.length > 0) return matched;
-    // Fallback: If parent account is active, provide student cohort so wards are always visible
-    return all.slice(0, 3);
+    return matched;
   }, [currentRole, currentUser.referenceId, currentUser.id, currentUser.email, storeVersion]);
 
   // Selected child validated strictly against parent's authorized linked children
@@ -292,17 +287,13 @@ export const ERPProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         currentRole,
         activeWorkspace,
         setActiveWorkspace,
-        switchUser,
         isAuthenticated,
-        login,
+        authStatus,
+        authError,
         logout,
-        switchRole,
         schoolSettings,
         updateSchoolSettings,
         refreshStore,
-        resetToDemoData,
-        exportBackup,
-        restoreFromJSON,
         unreadNoticesCount,
         unreadMessagesCount,
         unreadNotificationsCount,

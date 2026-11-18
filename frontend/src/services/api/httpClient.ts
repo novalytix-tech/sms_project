@@ -1,7 +1,6 @@
-// ==========================================
-// Centralized HTTP Client with Auto-Refresh & JWT Auth
-// Developed for School ERP (NTS Novalytix)
-// ==========================================
+// Centralized HTTP client. Authentication is handled by Clerk: every request
+// carries a short-lived Clerk session token fetched just-in-time. Nothing
+// auth-related is ever stored in localStorage/sessionStorage.
 
 export interface ApiResponse<T = any> {
   success: boolean;
@@ -14,141 +13,43 @@ export interface ApiResponse<T = any> {
   };
 }
 
+type TokenGetter = () => Promise<string | null>;
+
+const API_BASE_URL: string = (import.meta.env.VITE_API_URL || '/api/v1').replace(/\/$/, '');
+
 class HttpClient {
-  private baseURL: string;
-  private accessToken: string | null = null;
-  private isRefreshing: boolean = false;
-  private refreshSubscribers: ((token: string) => void)[] = [];
+  private getToken: TokenGetter = async () => null;
 
-  constructor() {
-    const proc = (globalThis as any).process;
-    if ((import.meta as any).env?.VITE_API_URL) {
-      this.baseURL = (import.meta as any).env.VITE_API_URL;
-    } else if (proc && (proc.env?.NODE_ENV === 'test' || proc.env?.VITEST)) {
-      this.baseURL = 'http://127.0.0.1:5000/api/v1';
-    } else if (typeof window !== 'undefined' && window.location?.origin && !window.location.origin.includes('localhost:3000')) {
-      this.baseURL = `${window.location.origin}/api/v1`;
-    } else {
-      this.baseURL = 'http://127.0.0.1:5000/api/v1';
-    }
-    // Hydrate token from storage on boot if available
-    this.accessToken = localStorage.getItem('nts_erp_access_token');
+  /** Registered once by the auth provider (Clerk's getToken). */
+  public setTokenGetter(getter: TokenGetter) {
+    this.getToken = getter;
   }
 
-  public setToken(token: string | null) {
-    this.accessToken = token;
-    if (token) {
-      localStorage.setItem('nts_erp_access_token', token);
-    } else {
-      localStorage.removeItem('nts_erp_access_token');
-    }
-  }
-
-  public getToken(): string | null {
-    return this.accessToken || localStorage.getItem('nts_erp_access_token');
-  }
-
-  private onTokenRefreshed(token: string) {
-    this.refreshSubscribers.forEach(cb => cb(token));
-    this.refreshSubscribers = [];
-  }
-
-  private addRefreshSubscriber(cb: (token: string) => void) {
-    this.refreshSubscribers.push(cb);
-  }
-
-  public async request<T = any>(
-    endpoint: string,
-    options: RequestInit = {}
-  ): Promise<ApiResponse<T>> {
-    const url = endpoint.startsWith('http') ? endpoint : `${this.baseURL}${endpoint.startsWith('/') ? '' : '/'}${endpoint}`;
+  public async request<T = any>(endpoint: string, options: RequestInit = {}): Promise<ApiResponse<T>> {
+    const url = `${API_BASE_URL}${endpoint.startsWith('/') ? '' : '/'}${endpoint}`;
     const headers = new Headers(options.headers || {});
-
-    // Ensure content type
     if (!headers.has('Content-Type') && !(options.body instanceof FormData)) {
       headers.set('Content-Type', 'application/json');
     }
 
-    // Attach JWT Bearer if available
-    const token = this.getToken();
-    if (token && !headers.has('Authorization')) {
-      headers.set('Authorization', `Bearer ${token}`);
-    }
-
-    const config: RequestInit = {
-      ...options,
-      headers,
-      credentials: 'include', // Include HttpOnly cookies for refresh token rotation
-    };
+    const token = await this.getToken().catch(() => null);
+    if (token) headers.set('Authorization', `Bearer ${token}`);
 
     try {
-      let response = await fetch(url, config);
-
-      // Handle 401 Unauthorized with token refresh rotation
-      if (response.status === 401 && !endpoint.includes('/auth/login') && !endpoint.includes('/auth/refresh')) {
-        if (!this.isRefreshing) {
-          this.isRefreshing = true;
-          try {
-            const refreshRes = await fetch(`${this.baseURL}/auth/refresh`, {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              credentials: 'include',
-            });
-
-            if (refreshRes.ok) {
-              const refreshData = await refreshRes.json();
-              const newToken = refreshData.data?.access_token;
-              if (newToken) {
-                this.setToken(newToken);
-                this.onTokenRefreshed(newToken);
-              }
-            } else {
-              this.setToken(null);
-              window.dispatchEvent(new CustomEvent('nts_erp_auth_expired'));
-            }
-          } catch (refreshErr) {
-            this.setToken(null);
-          } finally {
-            this.isRefreshing = false;
-          }
-        }
-
-        // Wait for refresh to complete then retry original request
-        const retryPromise = new Promise<ApiResponse<T>>((resolve, reject) => {
-          this.addRefreshSubscriber(async (newToken) => {
-            headers.set('Authorization', `Bearer ${newToken}`);
-            try {
-              const retryRes = await fetch(url, { ...config, headers });
-              const retryJson = await retryRes.json();
-              resolve(retryJson);
-            } catch (err) {
-              reject(err);
-            }
-          });
-        });
-
-        return await retryPromise;
+      const response = await fetch(url, { ...options, headers });
+      if (response.status === 401) {
+        window.dispatchEvent(new CustomEvent('nts_erp_auth_expired'));
       }
-
-      const json = await response.json().catch(() => ({
+      return await response.json().catch(() => ({
         success: response.ok,
-        data: null,
+        data: null as any,
         message: response.statusText,
       }));
-
-      return json;
     } catch (err: any) {
-      const proc = (globalThis as any).process;
-      if (!proc?.env?.VITEST) {
-        console.warn(`HTTP request failed for ${url}:`, err);
-      }
       return {
         success: false,
         data: null as any,
-        error: {
-          code: 'NETWORK_ERROR',
-          message: err?.message || 'Network request failed',
-        },
+        error: { code: 'NETWORK_ERROR', message: err?.message || 'Network request failed' },
       };
     }
   }
@@ -161,7 +62,7 @@ class HttpClient {
     return this.request<T>(endpoint, {
       ...options,
       method: 'POST',
-      body: body instanceof FormData ? body : JSON.stringify(body),
+      body: body instanceof FormData ? body : JSON.stringify(body ?? {}),
     });
   }
 
@@ -169,7 +70,7 @@ class HttpClient {
     return this.request<T>(endpoint, {
       ...options,
       method: 'PUT',
-      body: body instanceof FormData ? body : JSON.stringify(body),
+      body: body instanceof FormData ? body : JSON.stringify(body ?? {}),
     });
   }
 
@@ -179,4 +80,3 @@ class HttpClient {
 }
 
 export const httpClient = new HttpClient();
-

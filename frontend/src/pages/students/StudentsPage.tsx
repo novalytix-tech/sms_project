@@ -20,9 +20,6 @@ import { EmptyState } from '../../components/common/EmptyState';
 import { Pagination } from '../../components/common/Pagination';
 import { StudentProfileView } from '../../components/students/StudentProfileView';
 import { SearchInput } from '../../components/common/SearchInput';
-import { CredentialDeliveryModal } from '../../components/auth/CredentialDeliveryModal';
-import { accountService } from '../../services/accountService';
-import { sendCredentialsSMS, sendCredentialsEmail } from '../../services/credentialDeliveryService';
 import { PhotoUpload } from '../../components/common/PhotoUpload';
 import { useERP } from '../../context/ERPContext';
 import { formatDate, formatCurrencyINR } from '../../utils/formatters';
@@ -115,23 +112,6 @@ const StudentDirectoryManager: React.FC = () => {
   const [editingStudent, setEditingStudent] = useState<Student | null>(null);
   const [viewingStudent, setViewingStudent] = useState<Student | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<Student | null>(null);
-  const [credentialModal, setCredentialModal] = useState<{
-    isOpen: boolean;
-    name: string;
-    role: string;
-    loginId: string;
-    temporaryPassword: string;
-    phone: string;
-    email: string;
-  }>({
-    isOpen: false,
-    name: '',
-    role: 'student',
-    loginId: '',
-    temporaryPassword: '',
-    phone: '',
-    email: '',
-  });
 
   // Form Fields State
   const [formData, setFormData] = useState({
@@ -259,28 +239,7 @@ const StudentDirectoryManager: React.FC = () => {
         return;
       }
       addToast('success', 'Student Admitted', `${formData.firstName} ${formData.lastName} was registered successfully.`);
-
-      // Automatically generate student user account and trigger credential delivery
-      accountService.createAccount({
-        firstName: formData.firstName,
-        lastName: formData.lastName,
-        email: formData.parentEmail || `${formData.admissionNo.toLowerCase()}@student.stxaviers.edu.in`,
-        phone: formData.parentPhone,
-        role: 'student',
-        loginId: formData.admissionNo,
-      }).then(accRes => {
-        if (accRes.success && accRes.data) {
-          setCredentialModal({
-            isOpen: true,
-            name: accRes.data.full_name,
-            role: 'student',
-            loginId: accRes.data.login_id,
-            temporaryPassword: accRes.data.temporary_password || 'Init#2026!',
-            phone: accRes.data.phone,
-            email: accRes.data.email,
-          });
-        }
-      });
+      addToast('info', 'Sign-in access', 'Create a sign-in account for this person in Account Management.');
     }
 
     setIsFormOpen(false);
@@ -395,13 +354,11 @@ const StudentDirectoryManager: React.FC = () => {
     }
 
     // Larger batches mean fewer server round-trips; the ring still advances per batch.
-    type ImpCred = { name: string; admissionNo: string; className: string; section: string; loginId: string; temporaryPassword: string };
     const BATCH = 100;
     const started = Date.now();
     setImportProgress({ active: true, done: 0, total: rows.length, startedAt: started, label: 'Importing Students' });
 
     const allCreated: Student[] = [];
-    const allCreds: ImpCred[] = [];
     const allErrors: ImportRowError[] = [];
     let imported = 0;
     let skipped = 0;
@@ -412,7 +369,6 @@ const StudentDirectoryManager: React.FC = () => {
         const chunk = rows.slice(i, i + BATCH);
         const res = await httpClient.post<{
           created: Student[];
-          credentials: ImpCred[];
           errors: ImportRowError[];
           imported: number;
           skipped: number;
@@ -421,7 +377,6 @@ const StudentDirectoryManager: React.FC = () => {
           throw new Error(res?.error?.message || res?.message || 'Import failed.');
         }
         allCreated.push(...(res.data.created || []));
-        allCreds.push(...(res.data.credentials || []));
         allErrors.push(...(res.data.errors || []));
         imported += res.data.imported || 0;
         skipped += res.data.skipped || 0;
@@ -437,15 +392,6 @@ const StudentDirectoryManager: React.FC = () => {
       studentService.addLocalBatch(allCreated);
       setStudents([...studentService.getAll()]);
     }
-    const downloadCreds = () => {
-      if (allCreds.length === 0) return;
-      exportToCSV(
-        'Student_Login_Credentials',
-        ['Student Name', 'Admission No', 'Class', 'Section', 'Login ID', 'Temporary Password'],
-        allCreds.map(c => [c.name, c.admissionNo, c.className, c.section, c.loginId, c.temporaryPassword])
-      );
-    };
-    downloadCreds();
 
     // Close the progress ring, then show the full summary report.
     setTimeout(() => {
@@ -453,12 +399,11 @@ const StudentDirectoryManager: React.FC = () => {
       setImportSummary({
         imported,
         skipped,
-        credentials: allCreds.length,
+        credentials: 0,
         errors: allErrors,
         durationSec: (Date.now() - started) / 1000,
         failure: errorMsg || undefined,
       });
-      setDownloadCredsFn(() => downloadCreds);
     }, errorMsg ? 250 : 800);
 
     setSelectedIds([]);
@@ -1260,40 +1205,6 @@ const StudentDirectoryManager: React.FC = () => {
           message={`Are you sure you want to permanently delete ${deleteTarget.fullName} (${deleteTarget.admissionNo})? This will remove all associated attendance, fee and exam history.`}
           isDestructive
           confirmLabel="Delete Student"
-        />
-      )}
-
-      {/* Credential Delivery Modal */}
-      {credentialModal.isOpen && (
-        <CredentialDeliveryModal
-          isOpen={credentialModal.isOpen}
-          onClose={() => setCredentialModal({ ...credentialModal, isOpen: false })}
-          personName={credentialModal.name}
-          role={credentialModal.role}
-          loginId={credentialModal.loginId}
-          temporaryPassword={credentialModal.temporaryPassword}
-          phone={credentialModal.phone}
-          email={credentialModal.email}
-          onSendSMS={async () => {
-            const r = await sendCredentialsSMS({
-              name: credentialModal.name,
-              role: credentialModal.role,
-              loginId: credentialModal.loginId,
-              temporaryPassword: credentialModal.temporaryPassword,
-              phone: credentialModal.phone,
-            });
-            addToast(r.ok ? 'success' : 'error', r.ok ? 'SMS Sent' : 'SMS Not Sent', r.message);
-          }}
-          onSendEmail={async () => {
-            const r = await sendCredentialsEmail({
-              name: credentialModal.name,
-              role: credentialModal.role,
-              loginId: credentialModal.loginId,
-              temporaryPassword: credentialModal.temporaryPassword,
-              email: credentialModal.email,
-            });
-            addToast(r.ok ? 'success' : 'error', r.ok ? 'Email Sent' : 'Email Not Sent', r.message);
-          }}
         />
       )}
     </div>

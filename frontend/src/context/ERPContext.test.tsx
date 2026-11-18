@@ -1,83 +1,44 @@
 import React from 'react';
-import { renderHook, act } from '@testing-library/react';
-import { describe, it, expect, beforeEach } from 'vitest';
+import { renderHook, act, waitFor } from '@testing-library/react';
+import { describe, it, expect } from 'vitest';
 import { ERPProvider, useERP } from './ERPContext';
+import { signInAs, signOutTest } from '../test/setup';
 
-describe('ERPContext & ERPProvider State Management', () => {
-  beforeEach(() => {
-    sessionStorage.clear();
-    localStorage.clear();
-  });
+const wrapper: React.FC<{ children: React.ReactNode }> = ({ children }) => <ERPProvider>{children}</ERPProvider>;
 
-  const wrapper: React.FC<{ children: React.ReactNode }> = ({ children }) => (
-    <ERPProvider>{children}</ERPProvider>
-  );
-
-  it('initializes with default school admin role and demo user', () => {
+describe('ERPContext (Clerk-backed auth)', () => {
+  it('loads the signed-in user profile and role from the backend', async () => {
+    signInAs('teacher');
     const { result } = renderHook(() => useERP(), { wrapper });
-
-    expect(result.current.currentRole).toBe('school_admin');
-    expect(result.current.currentUser).toBeDefined();
-    expect(result.current.currentUser.name).toBe('Dr. Arvind Swaminathan');
-  });
-
-  it('handles role switching cleanly', () => {
-    const { result } = renderHook(() => useERP(), { wrapper });
-
-    act(() => {
-      result.current.switchRole('teacher');
-    });
-
-    expect(result.current.currentRole).toBe('teacher');
-    expect(result.current.currentUser.role).toBe('teacher');
-    expect(result.current.currentUser.name).toBe('Mrs. Ananya Sharma');
-  });
-
-  it('handles login and logout session state', () => {
-    const { result } = renderHook(() => useERP(), { wrapper });
-
-    act(() => {
-      result.current.login('student');
-    });
-
+    await waitFor(() => expect(result.current.authStatus).toBe('ready'));
     expect(result.current.isAuthenticated).toBe(true);
-    expect(result.current.currentRole).toBe('student');
-    expect(sessionStorage.getItem('nts_erp_authenticated')).toBe('true');
-
-    act(() => {
-      result.current.logout();
-    });
-
-    expect(result.current.isAuthenticated).toBe(false);
-    expect(sessionStorage.getItem('nts_erp_authenticated')).toBeNull();
-    expect(localStorage.getItem('nts_erp_authenticated')).toBe('false');
+    expect(result.current.currentRole).toBe('teacher');
+    expect(result.current.currentUser.name).toBe('Test User');
   });
 
-  it('handles toast addition, auto-id and removal', () => {
+  it('is signed out when Clerk has no session and stores nothing in browser storage', async () => {
+    signOutTest();
+    localStorage.clear();
+    sessionStorage.clear();
     const { result } = renderHook(() => useERP(), { wrapper });
+    await waitFor(() => expect(result.current.authStatus).toBe('signed_out'));
+    expect(result.current.isAuthenticated).toBe(false);
+    expect(Object.keys(sessionStorage)).toHaveLength(0);
+    expect(Object.keys(localStorage).some(k => /token|auth/i.test(k))).toBe(false);
+  });
 
-    act(() => {
-      result.current.addToast('info', 'Fee Reminder', 'Quarter 3 fees due next week');
-    });
-
-    expect(result.current.toasts.length).toBe(1);
-    expect(result.current.toasts[0].title).toBe('Fee Reminder');
-    const toastId = result.current.toasts[0].id;
-
-    act(() => {
-      result.current.removeToast(toastId);
-    });
-
-    expect(result.current.toasts.length).toBe(0);
+  it('handles toast addition and removal', async () => {
+    const { result } = renderHook(() => useERP(), { wrapper });
+    act(() => result.current.addToast('info', 'Fee Reminder', 'Quarter 3 fees due next week'));
+    expect(result.current.toasts).toHaveLength(1);
+    const id = result.current.toasts[0].id;
+    act(() => result.current.removeToast(id));
+    expect(result.current.toasts).toHaveLength(0);
   });
 
   it('allows updating school settings', () => {
     const { result } = renderHook(() => useERP(), { wrapper });
-
-    act(() => {
-      result.current.updateSchoolSettings({ schoolName: 'National Heritage Academy' });
-    });
-
+    act(() => result.current.updateSchoolSettings({ schoolName: 'National Heritage Academy' }));
     expect(result.current.schoolSettings.schoolName).toBe('National Heritage Academy');
   });
 });

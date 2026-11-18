@@ -13,10 +13,7 @@ import { ConfirmDialog } from '../../components/common/ConfirmDialog';
 import { EmptyState } from '../../components/common/EmptyState';
 import { Pagination } from '../../components/common/Pagination';
 import { SearchInput } from '../../components/common/SearchInput';
-import { CredentialDeliveryModal } from '../../components/auth/CredentialDeliveryModal';
-import { sendCredentialsSMS, sendCredentialsEmail } from '../../services/credentialDeliveryService';
 import { PhotoUpload } from '../../components/common/PhotoUpload';
-import { accountService } from '../../services/accountService';
 import { useERP } from '../../context/ERPContext';
 import { formatDate } from '../../utils/formatters';
 import { exportToCSV } from '../../utils/export';
@@ -48,23 +45,6 @@ export const TeachersPage: React.FC = () => {
   const [editingTeacher, setEditingTeacher] = useState<Teacher | null>(null);
   const [viewingTeacher, setViewingTeacher] = useState<Teacher | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<Teacher | null>(null);
-  const [credentialModal, setCredentialModal] = useState<{
-    isOpen: boolean;
-    name: string;
-    role: string;
-    loginId: string;
-    temporaryPassword: string;
-    phone: string;
-    email: string;
-  }>({
-    isOpen: false,
-    name: '',
-    role: 'teacher',
-    loginId: '',
-    temporaryPassword: '',
-    phone: '',
-    email: '',
-  });
 
   // Form Fields
   const [formData, setFormData] = useState({
@@ -162,28 +142,7 @@ export const TeachersPage: React.FC = () => {
         return;
       }
       addToast('success', 'Staff Registered', `${formData.firstName} ${formData.lastName} was added to directory.`);
-
-      // Automatically generate staff user account & trigger credential delivery modal
-      accountService.createAccount({
-        firstName: formData.firstName,
-        lastName: formData.lastName,
-        email: formData.email,
-        phone: formData.phone,
-        role: 'teacher',
-        loginId: formData.staffId,
-      }).then(accRes => {
-        if (accRes.success && accRes.data) {
-          setCredentialModal({
-            isOpen: true,
-            name: accRes.data.full_name,
-            role: 'teacher',
-            loginId: accRes.data.login_id,
-            temporaryPassword: accRes.data.temporary_password || 'Init#2026!',
-            phone: accRes.data.phone,
-            email: accRes.data.email,
-          });
-        }
-      });
+      addToast('info', 'Sign-in access', 'Create a sign-in account for this person in Account Management.');
     }
 
     setIsFormOpen(false);
@@ -861,40 +820,6 @@ export const TeachersPage: React.FC = () => {
           message={`Are you sure you want to remove ${deleteTarget.fullName} (${deleteTarget.staffId}) from the teacher register?`}
           isDestructive
           confirmLabel="Delete"
-        />
-      )}
-
-      {/* Credential Delivery Modal */}
-      {credentialModal.isOpen && (
-        <CredentialDeliveryModal
-          isOpen={credentialModal.isOpen}
-          onClose={() => setCredentialModal({ ...credentialModal, isOpen: false })}
-          personName={credentialModal.name}
-          role={credentialModal.role}
-          loginId={credentialModal.loginId}
-          temporaryPassword={credentialModal.temporaryPassword}
-          phone={credentialModal.phone}
-          email={credentialModal.email}
-          onSendSMS={async () => {
-            const r = await sendCredentialsSMS({
-              name: credentialModal.name,
-              role: credentialModal.role,
-              loginId: credentialModal.loginId,
-              temporaryPassword: credentialModal.temporaryPassword,
-              phone: credentialModal.phone,
-            });
-            addToast(r.ok ? 'success' : 'error', r.ok ? 'SMS Sent' : 'SMS Not Sent', r.message);
-          }}
-          onSendEmail={async () => {
-            const r = await sendCredentialsEmail({
-              name: credentialModal.name,
-              role: credentialModal.role,
-              loginId: credentialModal.loginId,
-              temporaryPassword: credentialModal.temporaryPassword,
-              email: credentialModal.email,
-            });
-            addToast(r.ok ? 'success' : 'error', r.ok ? 'Email Sent' : 'Email Not Sent', r.message);
-          }}
         />
       )}
     </div>

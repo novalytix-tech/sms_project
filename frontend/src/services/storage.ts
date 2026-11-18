@@ -300,19 +300,11 @@ export class ERPStorage {
     }
   }
 
-  public static set(data: ERPDataStore, syncBackend: boolean = true): void {
+  public static set(data: ERPDataStore): void {
     try {
       this.cachedData = data;
       localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
-      // Dispatch custom event so reactive hooks/listeners can update immediately
       window.dispatchEvent(new CustomEvent('nts_erp_storage_updated', { detail: data }));
-
-      // Asynchronously synchronize mutations with PostgreSQL 18 backend
-      if (syncBackend) {
-        httpClient.post('/sync/store', {
-          students: data.students,
-        }).catch(err => console.debug('Backend sync notice:', err));
-      }
     } catch (err) {
       console.error('Failed to save ERP store to localStorage:', err);
     }
@@ -384,7 +376,7 @@ export class ERPStorage {
           });
           current.institutions = Array.from(institutionMap.values());
         }
-        this.set(current, false);
+        this.set(current);
         return true;
       }
     } catch (err) {

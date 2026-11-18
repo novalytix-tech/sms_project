@@ -24,7 +24,7 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
   allowedRoles,
   requiredService,
 }) => {
-  const { isAuthenticated, currentRole, currentUser, addToast } = useERP();
+  const { isAuthenticated, authStatus, currentRole, currentUser, addToast } = useERP();
   const location = useLocation();
   const hasNotified = useRef(false);
 
@@ -42,7 +42,10 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
     }
   }, [isAuthenticated, isRoleAuthorized, currentRole, addToast]);
 
-  // 1. If unauthenticated, redirect to /login
+  // 1. Wait for Clerk + profile; then redirect unauthenticated users to /login
+  if (authStatus === 'loading') {
+    return null;
+  }
   if (!isAuthenticated) {
     return <Navigate to="/login" state={{ from: location }} replace />;
   }

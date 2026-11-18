@@ -3,46 +3,46 @@
 // Developed by NTS Novalytix
 // ==========================================
 
-import React from 'react';
+import React, { lazy } from 'react';
 import { createBrowserRouter } from 'react-router-dom';
 import { AppLayout } from '../layouts/AppLayout';
 import { ProtectedRoute } from '../components/common/ProtectedRoute';
 import { LoginPage } from '../pages/auth/LoginPage';
 import { AdmissionEnquiryPage } from '../pages/public/AdmissionEnquiryPage';
-import { DashboardRouter } from '../pages/dashboards/DashboardRouter';
-import { AdmissionsPage } from '../pages/admissions/AdmissionsPage';
-import { StudentsPage } from '../pages/students/StudentsPage';
-import { TeachersPage } from '../pages/teachers/TeachersPage';
-import { ClassesPage } from '../pages/classes/ClassesPage';
-import { AttendancePage } from '../pages/attendance/AttendancePage';
-import { AssignmentsPage } from '../pages/assignments/AssignmentsPage';
-import { ExaminationsPage } from '../pages/examinations/ExaminationsPage';
-import { TeacherQuestionPapersPage } from '../pages/question-papers/TeacherQuestionPapersPage';
-import { PrincipalQuestionPaperReviewPage } from '../pages/question-papers/PrincipalQuestionPaperReviewPage';
-import { FeesPage } from '../pages/fees/FeesPage';
-import { TimetablePage } from '../pages/timetable/TimetablePage';
-import { CalendarPage } from '../pages/calendar/CalendarPage';
-import { NoticesPage } from '../pages/notices/NoticesPage';
-import { MessagesPage } from '../pages/messages/MessagesPage';
-import { LeavePage } from '../pages/leave/LeavePage';
-import { LibraryManagementPage } from '../pages/library/LibraryManagementPage';
-import { TransportPage } from '../pages/transport/TransportPage';
-import { ReportsPage } from '../pages/reports/ReportsPage';
-import { InstitutionsPage } from '../pages/institutions/InstitutionsPage';
-import { SuppliersPage } from '../pages/suppliers/SuppliersPage';
-import { SettingsPage } from '../pages/settings/SettingsPage';
-import { AboutPage } from '../pages/about/AboutPage';
-import { StaffGroupsPage } from '../pages/staff-groups/StaffGroupsPage';
-import { ClassGroupsPage } from '../pages/class-groups/ClassGroupsPage';
-import { ServiceEntitlementsPage } from '../pages/service-entitlements/ServiceEntitlementsPage';
-import { DigitalMarketingPage } from '../pages/digital-marketing/DigitalMarketingPage';
-import { AcademicAwardsPage } from '../pages/academic-awards/AcademicAwardsPage';
-import { AccountManagementPage } from '../pages/admin/AccountManagementPage';
+const DashboardRouter = lazy(() => import('../pages/dashboards/DashboardRouter').then(m => ({ default: m.DashboardRouter })));
+const AdmissionsPage = lazy(() => import('../pages/admissions/AdmissionsPage').then(m => ({ default: m.AdmissionsPage })));
+const StudentsPage = lazy(() => import('../pages/students/StudentsPage').then(m => ({ default: m.StudentsPage })));
+const TeachersPage = lazy(() => import('../pages/teachers/TeachersPage').then(m => ({ default: m.TeachersPage })));
+const ClassesPage = lazy(() => import('../pages/classes/ClassesPage').then(m => ({ default: m.ClassesPage })));
+const AttendancePage = lazy(() => import('../pages/attendance/AttendancePage').then(m => ({ default: m.AttendancePage })));
+const AssignmentsPage = lazy(() => import('../pages/assignments/AssignmentsPage').then(m => ({ default: m.AssignmentsPage })));
+const ExaminationsPage = lazy(() => import('../pages/examinations/ExaminationsPage').then(m => ({ default: m.ExaminationsPage })));
+const TeacherQuestionPapersPage = lazy(() => import('../pages/question-papers/TeacherQuestionPapersPage').then(m => ({ default: m.TeacherQuestionPapersPage })));
+const PrincipalQuestionPaperReviewPage = lazy(() => import('../pages/question-papers/PrincipalQuestionPaperReviewPage').then(m => ({ default: m.PrincipalQuestionPaperReviewPage })));
+const FeesPage = lazy(() => import('../pages/fees/FeesPage').then(m => ({ default: m.FeesPage })));
+const TimetablePage = lazy(() => import('../pages/timetable/TimetablePage').then(m => ({ default: m.TimetablePage })));
+const CalendarPage = lazy(() => import('../pages/calendar/CalendarPage').then(m => ({ default: m.CalendarPage })));
+const NoticesPage = lazy(() => import('../pages/notices/NoticesPage').then(m => ({ default: m.NoticesPage })));
+const MessagesPage = lazy(() => import('../pages/messages/MessagesPage').then(m => ({ default: m.MessagesPage })));
+const LeavePage = lazy(() => import('../pages/leave/LeavePage').then(m => ({ default: m.LeavePage })));
+const LibraryManagementPage = lazy(() => import('../pages/library/LibraryManagementPage').then(m => ({ default: m.LibraryManagementPage })));
+const TransportPage = lazy(() => import('../pages/transport/TransportPage').then(m => ({ default: m.TransportPage })));
+const ReportsPage = lazy(() => import('../pages/reports/ReportsPage').then(m => ({ default: m.ReportsPage })));
+const InstitutionsPage = lazy(() => import('../pages/institutions/InstitutionsPage').then(m => ({ default: m.InstitutionsPage })));
+const SuppliersPage = lazy(() => import('../pages/suppliers/SuppliersPage').then(m => ({ default: m.SuppliersPage })));
+const SettingsPage = lazy(() => import('../pages/settings/SettingsPage').then(m => ({ default: m.SettingsPage })));
+const AboutPage = lazy(() => import('../pages/about/AboutPage').then(m => ({ default: m.AboutPage })));
+const StaffGroupsPage = lazy(() => import('../pages/staff-groups/StaffGroupsPage').then(m => ({ default: m.StaffGroupsPage })));
+const ClassGroupsPage = lazy(() => import('../pages/class-groups/ClassGroupsPage').then(m => ({ default: m.ClassGroupsPage })));
+const ServiceEntitlementsPage = lazy(() => import('../pages/service-entitlements/ServiceEntitlementsPage').then(m => ({ default: m.ServiceEntitlementsPage })));
+const DigitalMarketingPage = lazy(() => import('../pages/digital-marketing/DigitalMarketingPage').then(m => ({ default: m.DigitalMarketingPage })));
+const AcademicAwardsPage = lazy(() => import('../pages/academic-awards/AcademicAwardsPage').then(m => ({ default: m.AcademicAwardsPage })));
+const AccountManagementPage = lazy(() => import('../pages/admin/AccountManagementPage').then(m => ({ default: m.AccountManagementPage })));
 import { NotFound } from '../pages/NotFound';
 
 export const router = createBrowserRouter([
   {
-    path: '/login',
+    path: '/login/*',
     element: <LoginPage />,
   },
   {

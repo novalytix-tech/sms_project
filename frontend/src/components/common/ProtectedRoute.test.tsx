@@ -1,6 +1,7 @@
 import React from 'react';
 import { describe, it, expect, beforeEach } from 'vitest';
 import { render, screen } from '@testing-library/react';
+import { signOutTest } from '../../test/setup';
 import { MemoryRouter, Routes, Route } from 'react-router-dom';
 import { ProtectedRoute } from './ProtectedRoute';
 import { ERPProvider } from '../../context/ERPContext';
@@ -15,8 +16,7 @@ describe('ProtectedRoute Access Control & Route Guard', () => {
     sessionStorage.clear();
   });
 
-  it('renders protected child component when authenticated and role matches', () => {
-    sessionStorage.setItem('nts_erp_authenticated', 'true');
+  it('renders protected child component when authenticated and role matches', async () => {
     render(
       <MemoryRouter initialEntries={['/protected']}>
         <ERPProvider>
@@ -36,11 +36,11 @@ describe('ProtectedRoute Access Control & Route Guard', () => {
       </MemoryRouter>
     );
 
-    expect(screen.getByText('Protected ERP Content')).toBeInTheDocument();
+    expect(await screen.findByText('Protected ERP Content')).toBeInTheDocument();
   });
 
-  it('redirects to login when unauthenticated', () => {
-    // sessionStorage is empty, so isAuthenticated is false
+  it('redirects to login when unauthenticated', async () => {
+    signOutTest();
     render(
       <MemoryRouter initialEntries={['/protected']}>
         <ERPProvider>
@@ -61,11 +61,10 @@ describe('ProtectedRoute Access Control & Route Guard', () => {
     );
 
     expect(screen.queryByText('Protected ERP Content')).not.toBeInTheDocument();
-    expect(screen.getByText('Login Screen')).toBeInTheDocument();
+    expect(await screen.findByText('Login Screen')).toBeInTheDocument();
   });
 
-  it('redirects to root when role is unauthorized for the route', () => {
-    sessionStorage.setItem('nts_erp_authenticated', 'true');
+  it('redirects to root when role is unauthorized for the route', async () => {
     render(
       <MemoryRouter initialEntries={['/super-admin-only']}>
         <ERPProvider>
@@ -87,6 +86,6 @@ describe('ProtectedRoute Access Control & Route Guard', () => {
 
     // Initial role is school_admin, which does not match super_admin
     expect(screen.queryByText('Protected ERP Content')).not.toBeInTheDocument();
-    expect(screen.getByText('Home Dashboard')).toBeInTheDocument();
+    expect(await screen.findByText('Home Dashboard')).toBeInTheDocument();
   });
 });

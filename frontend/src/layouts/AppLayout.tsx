@@ -3,7 +3,7 @@
 // Developed by NTS Novalytix
 // ==========================================
 
-import React, { useState } from 'react';
+import React, { Suspense, useState } from 'react';
 import { Outlet, Navigate } from 'react-router-dom';
 import { Sidebar } from '../components/layout/Sidebar';
 import { Topbar } from '../components/layout/Topbar';
@@ -13,12 +13,14 @@ import { ToastContainer } from '../components/common/ToastContainer';
 import { useERP } from '../context/ERPContext';
 
 export const AppLayout: React.FC = () => {
-  const { isAuthenticated } = useERP();
+  const { authStatus } = useERP();
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
 
-  // If there is no active demo session, redirect to the Workspace Login / Landing page
-  if (!isAuthenticated) {
+  if (authStatus === 'loading') {
+    return <div style={{ padding: 32 }}>Loading…</div>;
+  }
+  if (authStatus !== 'ready') {
     return <Navigate to="/login" replace />;
   }
 
@@ -35,7 +37,9 @@ export const AppLayout: React.FC = () => {
         <Topbar onOpenMobileSidebar={() => setMobileOpen(true)} />
 
         <main className="app-main-content">
-          <Outlet />
+          <Suspense fallback={<div style={{ padding: 24 }}>Loading…</div>}>
+            <Outlet />
+          </Suspense>
         </main>
 
         <Footer />

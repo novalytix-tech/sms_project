@@ -5,8 +5,6 @@
 
 import React, { useState, useEffect, useMemo } from 'react';
 import { accountService, UserAccountItem } from '../../services/accountService';
-import { CredentialDeliveryModal } from '../../components/auth/CredentialDeliveryModal';
-import { sendCredentialsSMS, sendCredentialsEmail } from '../../services/credentialDeliveryService';
 import { Modal } from '../../components/common/Modal';
 import { Badge } from '../../components/common/Badge';
 import { SearchInput } from '../../components/common/SearchInput';
@@ -15,7 +13,7 @@ import { EmptyState } from '../../components/common/EmptyState';
 import { useERP } from '../../context/ERPContext';
 import { UserRole } from '../../types';
 
-import { ShieldCheck, UserPlus, KeyRound, RotateCcw, Lock, Unlock, Users, CheckCircle, AlertTriangle } from 'lucide-react';
+import { ShieldCheck, UserPlus, Mail, RotateCcw, Lock, Unlock, Users, CheckCircle, AlertTriangle } from 'lucide-react';
 
 export const AccountManagementPage: React.FC = () => {
   const { addToast } = useERP();
@@ -39,26 +37,6 @@ export const AccountManagementPage: React.FC = () => {
     email: '',
     phone: '',
     role: 'student' as UserRole,
-    loginId: '',
-  });
-
-  // Credential Delivery Modal
-  const [deliveryModalData, setDeliveryModalData] = useState<{
-    isOpen: boolean;
-    name: string;
-    role: string;
-    loginId: string;
-    temporaryPassword: string;
-    phone: string;
-    email: string;
-  }>({
-    isOpen: false,
-    name: '',
-    role: '',
-    loginId: '',
-    temporaryPassword: '',
-    phone: '',
-    email: '',
   });
 
   const loadAccounts = async () => {
@@ -68,7 +46,12 @@ export const AccountManagementPage: React.FC = () => {
       status: statusFilter,
       search,
     });
-    setAccounts(list);
+    if (list.success) {
+      setAccounts(list.data);
+    } else {
+      setAccounts([]);
+      addToast('error', 'Could not load accounts', list.error);
+    }
     setLoading(false);
   };
 
@@ -79,7 +62,7 @@ export const AccountManagementPage: React.FC = () => {
   // Derived metrics
   const totalCount = accounts.length;
   const activeCount = accounts.filter(a => a.status === 'active').length;
-  const pendingPassCount = accounts.filter(a => a.must_change_password).length;
+  const pendingPassCount = accounts.filter(a => !a.sign_in_linked).length;
   const deactivatedCount = accounts.filter(a => a.status === 'deactivated').length;
 
   // Paginated records
@@ -90,65 +73,41 @@ export const AccountManagementPage: React.FC = () => {
 
   const handleCreateAccount = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newForm.firstName.trim() || !newForm.lastName.trim()) {
-      addToast('error', 'Validation Error', 'First and Last name are required.');
+    if (!newForm.firstName.trim() || !newForm.lastName.trim() || !newForm.email.trim()) {
+      addToast('error', 'Validation Error', 'First name, last name and email are required.');
       return;
     }
-
     const res = await accountService.createAccount(newForm);
-    if (res.success && res.data) {
-      addToast('success', 'Account Created', `Login ID: ${res.data.login_id} for ${res.data.full_name}`);
-      setIsAddOpen(false);
-      setNewForm({ firstName: '', lastName: '', email: '', phone: '', role: 'student', loginId: '' });
-      loadAccounts();
-
-      // Open Credential Delivery Modal
-      setDeliveryModalData({
-        isOpen: true,
-        name: res.data.full_name,
-        role: res.data.role,
-        loginId: res.data.login_id,
-        temporaryPassword: res.data.temporary_password || 'Init#2026!',
-        phone: res.data.phone || '+91 98222 33445',
-        email: res.data.email,
-      });
-    } else {
-      addToast('error', 'Creation Failed', res.error || 'Could not create account.');
+    if (!res.success) {
+      addToast('error', 'Creation Failed', res.error);
+      return;
     }
-  };
-
-  const handleResetPassword = async (account: UserAccountItem) => {
-    const res = await accountService.resetUserPassword(account.id);
-    if (res.success && res.temporaryPassword) {
-      addToast('success', 'Temporary Password Generated', `New temporary password created for ${account.full_name}.`);
-      loadAccounts();
-      setDeliveryModalData({
-        isOpen: true,
-        name: account.full_name,
-        role: account.role,
-        loginId: account.login_id,
-        temporaryPassword: res.temporaryPassword,
-        phone: account.phone,
-        email: account.email,
-      });
+    setIsAddOpen(false);
+    setNewForm({ firstName: '', lastName: '', email: '', phone: '', role: 'student' });
+    loadAccounts();
+    if (res.data.invitation_status === 'invited') {
+      addToast('success', 'Account Created', `Sign-in invitation emailed to ${res.data.email}.`);
+    } else {
+      addToast('warning', 'Account Created', 'The invitation email could not be sent. Use "Resend Invite" to retry.');
     }
   };
 
   const handleToggleStatus = async (account: UserAccountItem) => {
     const res = await accountService.toggleAccountStatus(account.id);
-    if (res.success) {
-      const willBeActive = account.status !== 'active';
-      addToast('info', 'Account Status Updated', `${account.full_name}'s account is now ${willBeActive ? 'Active' : 'Deactivated'}.`);
-      setAccounts(prev =>
-        prev.map(a => (a.id === account.id ? { ...a, status: willBeActive ? 'active' : 'deactivated', is_active: willBeActive } : a))
-      );
+    if (!res.success) {
+      addToast('error', 'Update Failed', res.error);
+      return;
     }
+    addToast('info', 'Account Status Updated', `${account.full_name}'s account is now ${res.data.is_active ? 'Active' : 'Deactivated'}.`);
+    setAccounts(prev => prev.map(a => (a.id === account.id ? res.data : a)));
   };
 
-  const handleResend = async (account: UserAccountItem, channel: 'sms' | 'email') => {
-    const res = await accountService.resendCredentials(account.id, channel);
+  const handleResendInvite = async (account: UserAccountItem) => {
+    const res = await accountService.resendInvitation(account.id);
     if (res.success) {
-      addToast('success', 'Credentials Dispatched', `Sent credentials to ${account.full_name} via ${channel.toUpperCase()}.`);
+      addToast('success', 'Invitation Sent', `Sign-in invitation emailed to ${account.email}.`);
+    } else {
+      addToast('error', 'Invitation Failed', res.error);
     }
   };
 
@@ -159,7 +118,7 @@ export const AccountManagementPage: React.FC = () => {
         <div className="page-title-group">
           <h1>User Accounts & Authentication</h1>
           <p className="page-subtitle">
-            Manage Login IDs, temporary credentials, password policies, and RBAC status
+            Provision school accounts and roles. Sign-in (password, MFA, reset) is handled by Clerk.
           </p>
         </div>
         <div className="page-actions">
@@ -183,9 +142,9 @@ export const AccountManagementPage: React.FC = () => {
           <div className="stat-sub">Authorized to Log In</div>
         </div>
         <div className="stat-card">
-          <div className="stat-label">Pending First Login</div>
+          <div className="stat-label">Invitation Pending</div>
           <div className="stat-value" style={{ color: '#D97706' }}>{pendingPassCount}</div>
-          <div className="stat-sub">Must Update Temp Password</div>
+          <div className="stat-sub">Not signed in yet</div>
         </div>
         <div className="stat-card">
           <div className="stat-label">Deactivated</div>
@@ -289,7 +248,7 @@ export const AccountManagementPage: React.FC = () => {
                     <th>Registered Mobile</th>
                     <th>Email Address</th>
                     <th>Account Status</th>
-                    <th>Password Status</th>
+                    <th>Sign-in</th>
                     <th style={{ textAlign: 'right' }}>Actions</th>
                   </tr>
                 </thead>
@@ -328,7 +287,7 @@ export const AccountManagementPage: React.FC = () => {
                       <td>
                         <Badge
                           status={acc.role === 'school_admin' ? 'active' : 'normal'}
-                          label={acc.role.toUpperCase()}
+                          label={(acc.role || 'none').toUpperCase()}
                         />
                       </td>
 
@@ -368,30 +327,32 @@ export const AccountManagementPage: React.FC = () => {
                       </td>
 
                       <td>
-                        {acc.must_change_password ? (
-                          <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', fontSize: '12px', color: '#D97706', fontWeight: 500 }}>
-                            <AlertTriangle size={13} />
-                            Temp Password
-                          </span>
-                        ) : (
+                        {acc.sign_in_linked ? (
                           <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', fontSize: '12px', color: '#059669' }}>
                             <CheckCircle size={13} />
-                            Permanent
+                            Linked
+                          </span>
+                        ) : (
+                          <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', fontSize: '12px', color: '#D97706', fontWeight: 500 }}>
+                            <AlertTriangle size={13} />
+                            Invited
                           </span>
                         )}
                       </td>
 
                       <td style={{ textAlign: 'right' }}>
                         <div style={{ display: 'inline-flex', gap: '6px' }}>
-                          <button
-                            type="button"
-                            className="btn btn-secondary btn-sm"
-                            title="Generate Temporary Password"
-                            onClick={() => handleResetPassword(acc)}
-                          >
-                            <KeyRound size={13} />
-                            <span>Reset Pass</span>
-                          </button>
+                          {!acc.sign_in_linked && (
+                            <button
+                              type="button"
+                              className="btn btn-secondary btn-sm"
+                              title="Resend sign-in invitation email"
+                              onClick={() => handleResendInvite(acc)}
+                            >
+                              <Mail size={13} />
+                              <span>Resend Invite</span>
+                            </button>
+                          )}
 
                           <button
                             type="button"
@@ -474,38 +435,28 @@ export const AccountManagementPage: React.FC = () => {
                 <option value="school_admin">School Admin / Staff</option>
               </select>
             </div>
-            <div className="form-group">
-              <label className="form-label">Custom Login ID (Optional)</label>
-              <input
-                type="text"
-                className="form-input"
-                placeholder="Leave blank to auto-generate"
-                value={newForm.loginId}
-                onChange={e => setNewForm({ ...newForm, loginId: e.target.value })}
-              />
-            </div>
           </div>
 
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px', marginBottom: '18px' }}>
             <div className="form-group">
-              <label className="form-label required">Registered Mobile Number</label>
+              <label className="form-label">Mobile Number (Optional)</label>
               <input
                 type="text"
                 className="form-input"
                 placeholder="e.g. +91 98111 22331"
                 value={newForm.phone}
                 onChange={e => setNewForm({ ...newForm, phone: e.target.value })}
-                required
               />
             </div>
             <div className="form-group">
-              <label className="form-label">Email Address (Optional)</label>
+              <label className="form-label required">Email Address</label>
               <input
                 type="email"
                 className="form-input"
                 placeholder="user@stxaviers.edu.in"
                 value={newForm.email}
                 onChange={e => setNewForm({ ...newForm, email: e.target.value })}
+                required
               />
             </div>
           </div>
@@ -521,7 +472,7 @@ export const AccountManagementPage: React.FC = () => {
               marginBottom: '20px',
             }}
           >
-            🔐 A unique Login ID and secure temporary password will be generated automatically. You can dispatch them via SMS or Email right after creation.
+            🔐 The user receives an invitation email and creates their own secure sign-in. No passwords are generated or shared by the school.
           </div>
 
           <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
@@ -533,45 +484,12 @@ export const AccountManagementPage: React.FC = () => {
               Cancel
             </button>
             <button type="submit" className="btn btn-primary">
-              Generate Account & Credentials
+              Create Account & Send Invite
             </button>
           </div>
         </form>
       </Modal>
 
-      {/* Credential Delivery Modal */}
-      {deliveryModalData.isOpen && (
-        <CredentialDeliveryModal
-          isOpen={deliveryModalData.isOpen}
-          onClose={() => setDeliveryModalData({ ...deliveryModalData, isOpen: false })}
-          personName={deliveryModalData.name}
-          role={deliveryModalData.role}
-          loginId={deliveryModalData.loginId}
-          temporaryPassword={deliveryModalData.temporaryPassword}
-          phone={deliveryModalData.phone}
-          email={deliveryModalData.email}
-          onSendSMS={async () => {
-            const r = await sendCredentialsSMS({
-              name: deliveryModalData.name,
-              role: deliveryModalData.role,
-              loginId: deliveryModalData.loginId,
-              temporaryPassword: deliveryModalData.temporaryPassword,
-              phone: deliveryModalData.phone,
-            });
-            addToast(r.ok ? 'success' : 'error', r.ok ? 'SMS Dispatched' : 'SMS Not Sent', r.message);
-          }}
-          onSendEmail={async () => {
-            const r = await sendCredentialsEmail({
-              name: deliveryModalData.name,
-              role: deliveryModalData.role,
-              loginId: deliveryModalData.loginId,
-              temporaryPassword: deliveryModalData.temporaryPassword,
-              email: deliveryModalData.email,
-            });
-            addToast(r.ok ? 'success' : 'error', r.ok ? 'Email Dispatched' : 'Email Not Sent', r.message);
-          }}
-        />
-      )}
     </div>
   );
 };

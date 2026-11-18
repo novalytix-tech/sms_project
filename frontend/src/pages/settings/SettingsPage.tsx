@@ -11,9 +11,6 @@ export const SettingsPage: React.FC = () => {
   const {
     schoolSettings,
     updateSchoolSettings,
-    resetToDemoData,
-    exportBackup,
-    restoreFromJSON,
     addToast,
   } = useERP();
 
@@ -40,47 +37,14 @@ export const SettingsPage: React.FC = () => {
     }
   };
 
-  const handleFileRestore = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onload = event => {
-        try {
-          const parsed = JSON.parse(event.target?.result as string);
-          const ok = restoreFromJSON(parsed);
-          if (ok) {
-            addToast('success', 'Backup Restored', 'All database entities successfully recovered from file.');
-          } else {
-            addToast('error', 'Restore Failed', 'Invalid backup JSON file.');
-          }
-        } catch {
-          addToast('error', 'Parse Error', 'The selected file is not a valid JSON document.');
-        }
-      };
-      reader.readAsText(file);
-    }
-  };
-
   return (
     <div>
       <div className="page-header">
         <div className="page-title-group">
           <h1>School Settings</h1>
           <p className="page-subtitle">
-            Institution profile, academic year, and system backup
+            Institution profile and academic year
           </p>
-        </div>
-
-        <div className="page-actions">
-          <button className="btn btn-secondary" onClick={exportBackup}>
-            <Download size={15} />
-            <span>Export Backup</span>
-          </button>
-          <label className="btn btn-secondary" style={{ cursor: 'pointer' }}>
-            <Upload size={15} />
-            <span>Restore Backup</span>
-            <input type="file" accept=".json" onChange={handleFileRestore} style={{ display: 'none' }} />
-          </label>
         </div>
       </div>
 
@@ -281,41 +245,6 @@ export const SettingsPage: React.FC = () => {
             </div>
           </div>
 
-          {/* Data Maintenance & Reset Card */}
-          <div className="card">
-            <div className="card-header">
-              <h2 className="card-title">
-                <RotateCcw size={18} color="#DC2626" />
-                Data Backup & Maintenance
-              </h2>
-            </div>
-            <div className="card-body">
-              <p style={{ fontSize: '12px', color: '#475569', lineHeight: '1.5', marginBottom: '16px' }}>
-                Export an archive of all school records or reset sample data back to initial defaults.
-              </p>
-
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                <button className="btn btn-secondary" onClick={exportBackup}>
-                  <Download size={14} />
-                  <span>Export System Backup</span>
-                </button>
-
-                <button
-                  className="btn btn-danger"
-                  onClick={() => {
-                    if (window.confirm('Reset all demo data back to default sample state? Any changes you made will be cleared.')) {
-                      resetToDemoData();
-                      setForm(schoolSettings);
-                      addToast('success', 'Reset Complete', 'Sample dataset restored.');
-                    }
-                  }}
-                >
-                  <RotateCcw size={14} />
-                  <span>Reset Sample Data</span>
-                </button>
-              </div>
-            </div>
-          </div>
         </div>
       </div>
     </div>

@@ -63,6 +63,7 @@ export const publicEnquiryService = {
   submit: async (data: PublicEnquiryInput): Promise<{ success: boolean; id?: string; error?: string }> => {
     try {
       const res = await httpClient.post('/admissions/inquiries', {
+        institution_code: import.meta.env.VITE_PUBLIC_INSTITUTION_CODE,
         first_name: data.firstName,
         last_name: data.lastName,
         phone: data.phone,

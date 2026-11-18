@@ -34,7 +34,6 @@ import {
   Check,
   BookMarked,
 } from 'lucide-react';
-import { DEMO_USERS } from '../../data/seedData';
 import { libraryService } from '../../services/libraryService';
 import { getTeacherLibraryAssignment } from '../../utils/permissions';
 
@@ -68,7 +67,6 @@ export const Topbar: React.FC<TopbarProps> = ({ onOpenMobileSidebar }) => {
     setSelectedChildId,
     activeWorkspace,
     setActiveWorkspace,
-    switchUser,
     logout,
     addToast,
   } = useERP();
@@ -868,109 +866,6 @@ export const Topbar: React.FC<TopbarProps> = ({ onOpenMobileSidebar }) => {
                 </Link>
               )}
 
-              {/* Teacher Scenario Switcher (Demonstrating Librarian via Teacher Role) */}
-              {currentRole === 'teacher' && (
-                <div style={{ padding: '8px 10px', background: '#f8fafc', borderRadius: '8px', margin: '6px 0', border: '1px solid #e2e8f0' }}>
-                  <div style={{ fontSize: '10px', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', marginBottom: '6px', letterSpacing: '0.5px' }}>
-                    Teacher Responsibility Switcher
-                  </div>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        switchUser(DEMO_USERS.teacher);
-                        setActiveWorkspace('academic');
-                        setProfileDropdownOpen(false);
-                        navigate('/');
-                      }}
-                      style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'space-between',
-                        padding: '5px 8px',
-                        borderRadius: '6px',
-                        border: currentUser.id === DEMO_USERS.teacher.id ? '1px solid #3B82F6' : '1px solid transparent',
-                        background: currentUser.id === DEMO_USERS.teacher.id ? '#fef2f2' : '#ffffff',
-                        cursor: 'pointer',
-                        textAlign: 'left',
-                        fontSize: '11px',
-                      }}
-                    >
-                      <div>
-                        <div style={{ fontWeight: 600, color: '#0f172a' }}>Mrs. Ananya Sharma</div>
-                        <div style={{ fontSize: '10px', color: '#64748b' }}>Math Teacher (Normal Teacher)</div>
-                      </div>
-                      <span style={{ fontSize: '9px', fontWeight: 700, color: '#64748b', background: '#f1f5f9', padding: '1px 5px', borderRadius: '4px' }}>
-                        Scenario A
-                      </span>
-                    </button>
-
-                    {DEMO_USERS.teacher_librarian && (
-                      <button
-                        type="button"
-                        onClick={() => {
-                          switchUser(DEMO_USERS.teacher_librarian);
-                          setActiveWorkspace('library');
-                          setProfileDropdownOpen(false);
-                          navigate('/library');
-                        }}
-                        style={{
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'space-between',
-                          padding: '5px 8px',
-                          borderRadius: '6px',
-                          border: currentUser.id === DEMO_USERS.teacher_librarian.id ? '1px solid #3B82F6' : '1px solid transparent',
-                          background: currentUser.id === DEMO_USERS.teacher_librarian.id ? '#fef2f2' : '#ffffff',
-                          cursor: 'pointer',
-                          textAlign: 'left',
-                          fontSize: '11px',
-                        }}
-                      >
-                        <div>
-                          <div style={{ fontWeight: 600, color: '#0f172a' }}>Mrs. Sunita Verma</div>
-                          <div style={{ fontSize: '10px', color: '#64748b' }}>Teacher + Head Librarian</div>
-                        </div>
-                        <span style={{ fontSize: '9px', fontWeight: 700, color: '#3B82F6', background: '#fee2e2', padding: '1px 5px', borderRadius: '4px' }}>
-                          Scenario B
-                        </span>
-                      </button>
-                    )}
-
-                    {DEMO_USERS.teacher_dual && (
-                      <button
-                        type="button"
-                        onClick={() => {
-                          switchUser(DEMO_USERS.teacher_dual);
-                          setProfileDropdownOpen(false);
-                          navigate('/library');
-                        }}
-                        style={{
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'space-between',
-                          padding: '5px 8px',
-                          borderRadius: '6px',
-                          border: currentUser.id === DEMO_USERS.teacher_dual.id ? '1px solid #3B82F6' : '1px solid transparent',
-                          background: currentUser.id === DEMO_USERS.teacher_dual.id ? '#fef2f2' : '#ffffff',
-                          cursor: 'pointer',
-                          textAlign: 'left',
-                          fontSize: '11px',
-                        }}
-                      >
-                        <div>
-                          <div style={{ fontWeight: 600, color: '#0f172a' }}>Mr. Rajesh Kumar</div>
-                          <div style={{ fontSize: '10px', color: '#64748b' }}>Science + Library In-charge</div>
-                        </div>
-                        <span style={{ fontSize: '9px', fontWeight: 700, color: '#2563eb', background: '#dbeafe', padding: '1px 5px', borderRadius: '4px' }}>
-                          Scenario C
-                        </span>
-                      </button>
-                    )}
-                  </div>
-                </div>
-              )}
-
               <div className="profile-dropdown-divider" />
 
               {/* Sign Out */}
@@ -980,7 +875,6 @@ export const Topbar: React.FC<TopbarProps> = ({ onOpenMobileSidebar }) => {
                 onClick={() => {
                   setProfileDropdownOpen(false);
                   logout();
-                  navigate('/login');
                 }}
               >
                 <LogOut size={15} />
