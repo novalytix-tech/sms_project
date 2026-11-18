@@ -24,7 +24,9 @@ PUBLIC_PEM = _KEY.public_key().public_bytes(
 ).decode()
 AZP = "http://localhost:5173"
 
-os.environ.setdefault("CLERK_SECRET_KEY", "test-clerk-secret-not-real")
+# Tests must not depend on the developer's local backend/.env (real keys, seed overrides).
+os.environ["CLERK_SECRET_KEY"] = "test-clerk-secret-not-real"
+os.environ["SEED_ADMIN_EMAIL"] = ""
 
 from app import create_app  # noqa: E402
 from app.extensions import db  # noqa: E402
