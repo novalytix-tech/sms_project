@@ -14,6 +14,7 @@ from flask import current_app
 
 CLERK_API_BASE = "https://api.clerk.com/v1"
 _HTTP_TIMEOUT = 10
+_USER_AGENT = "sms-backend/1.0"
 
 _jwks_lock = threading.Lock()
 _jwks_client: Optional[jwt.PyJWKClient] = None
@@ -36,7 +37,8 @@ def _get_jwks_client() -> jwt.PyJWKClient:
         if _jwks_client is None:
             _jwks_client = jwt.PyJWKClient(
                 f"{CLERK_API_BASE}/jwks",
-                headers={"Authorization": f"Bearer {_secret_key()}"},
+                # Clerk's API rejects urllib's default "Python-urllib" User-Agent with 403.
+                headers={"Authorization": f"Bearer {_secret_key()}", "User-Agent": _USER_AGENT},
                 cache_keys=True,
                 lifespan=3600,
                 timeout=_HTTP_TIMEOUT,
@@ -83,7 +85,7 @@ def _api(method: str, path: str, **kwargs) -> dict:
     resp = requests.request(
         method,
         f"{CLERK_API_BASE}{path}",
-        headers={"Authorization": f"Bearer {_secret_key()}"},
+        headers={"Authorization": f"Bearer {_secret_key()}", "User-Agent": _USER_AGENT},
         timeout=_HTTP_TIMEOUT,
         **kwargs,
     )
