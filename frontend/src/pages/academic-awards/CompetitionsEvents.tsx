@@ -2,6 +2,7 @@ import React, { useState, useMemo } from 'react';
 import { Calendar, Plus, Search, MapPin, Building, CheckCircle2, Trash2, Edit2, X } from 'lucide-react';
 import { CompetitionEvent, AwardCategory, AcademicAward } from '../../types/academicAwards';
 import { useERP } from '../../context/ERPContext';
+import { todayISO } from '../../utils/date';
 
 interface CompetitionsEventsProps {
   competitions: CompetitionEvent[];
@@ -32,8 +33,8 @@ export const CompetitionsEvents: React.FC<CompetitionsEventsProps> = ({
   const [organizer, setOrganizer] = useState('');
   const [level, setLevel] = useState<any>('School');
   const [venue, setVenue] = useState('');
-  const [startDate, setStartDate] = useState(new Date().toISOString().split('T')[0]);
-  const [endDate, setEndDate] = useState(new Date().toISOString().split('T')[0]);
+  const [startDate, setStartDate] = useState(todayISO());
+  const [endDate, setEndDate] = useState(todayISO());
   const [status, setStatus] = useState<'upcoming' | 'ongoing' | 'completed'>('upcoming');
   const [description, setDescription] = useState('');
 
@@ -58,8 +59,8 @@ export const CompetitionsEvents: React.FC<CompetitionsEventsProps> = ({
     setOrganizer('Inter-School Council');
     setLevel('School');
     setVenue('Campus Auditorium');
-    setStartDate(new Date().toISOString().split('T')[0]);
-    setEndDate(new Date().toISOString().split('T')[0]);
+    setStartDate(todayISO());
+    setEndDate(todayISO());
     setStatus('upcoming');
     setDescription('');
     setIsModalOpen(true);

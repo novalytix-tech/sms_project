@@ -27,6 +27,7 @@ import {
   Briefcase,
   RotateCcw,
 } from 'lucide-react';
+import { todayISO } from '../../utils/date';
 
 /**
  * Faculty and Administrative Daily Attendance Roster Marking Sheet
@@ -73,7 +74,7 @@ const DailyAttendanceRosterManager: React.FC = () => {
 
   const [selectedClassId, setSelectedClassId] = useState<string>(teacherAssignedClasses[0]?.id || 'cls-10a');
   const [selectedSection, setSelectedSection] = useState<string>(teacherAssignedClasses[0]?.section || 'A');
-  const [selectedDate, setSelectedDate] = useState<string>(new Date().toISOString().split('T')[0]);
+  const [selectedDate, setSelectedDate] = useState<string>(todayISO());
 
   // Roster state: studentId -> status ('not_marked' | 'present' | 'absent' | 'late' | 'excused'), remarks
   const [roster, setRoster] = useState<Record<string, { status: AttendanceStatus | 'not_marked'; remarks: string }>>({});
@@ -83,6 +84,17 @@ const DailyAttendanceRosterManager: React.FC = () => {
   const classStudents = useMemo(() => {
     return studentService.getByClassAndSection(selectedClassId, selectedSection);
   }, [selectedClassId, selectedSection]);
+
+  // Re-render when attendance data arrives from the server
+  const [dataVersion, setDataVersion] = useState(0);
+  useEffect(() => {
+    const onUpdate = () => setDataVersion(v => v + 1);
+    window.addEventListener('nts_erp_storage_updated', onUpdate);
+    return () => window.removeEventListener('nts_erp_storage_updated', onUpdate);
+  }, []);
+  useEffect(() => {
+    attendanceService.load({ classId: selectedClassId, date: selectedDate });
+  }, [selectedClassId, selectedDate]);
 
   // Load existing records for chosen date without defaulting unmarked students to present!
   useEffect(() => {
@@ -98,7 +110,7 @@ const DailyAttendanceRosterManager: React.FC = () => {
     });
 
     setRoster(map);
-  }, [selectedClassId, selectedSection, selectedDate, classStudents]);
+  }, [selectedClassId, selectedSection, selectedDate, classStudents, dataVersion]);
 
   const handleStatusChange = (studentId: string, status: AttendanceStatus | 'not_marked') => {
     setRoster(prev => ({
@@ -156,7 +168,8 @@ const DailyAttendanceRosterManager: React.FC = () => {
     addToast('info', 'Reset Roster', 'All student selections reset to Not Marked.');
   };
 
-  const handleSaveAttendance = () => {
+  const handleSaveAttendance = async () => {
+    if (isSaving) return;
     setIsSaving(true);
 
     // Guard: teachers can only mark attendance for their assigned classes
@@ -173,15 +186,16 @@ const DailyAttendanceRosterManager: React.FC = () => {
 
     const records = classStudents.map(stud => ({
       studentId: stud.id,
-      classId: selectedClassId,
-      section: selectedSection,
-      date: selectedDate,
       status: roster[stud.id]?.status || ('not_marked' as const),
       remarks: roster[stud.id]?.remarks,
     }));
 
-    const result = attendanceService.saveRosterAttendance(records);
+    const result = await attendanceService.saveRosterAttendance(selectedClassId, selectedDate, records);
     setIsSaving(false);
+    if (!result.success) {
+      addToast('error', 'Attendance Not Saved', result.error);
+      return;
+    }
     addToast(
       'success',
       'Attendance Recorded',
@@ -548,34 +562,30 @@ const DailyAttendanceRosterManager: React.FC = () => {
 };
 
 export const AttendancePage: React.FC = () => {
-  const { currentRole, currentUser, selectedChild, parentChildren, setSelectedChildId } = useERP();
+  const { currentRole, linkedStudents } = useERP();
+  const [selectedId, setSelectedId] = useState<string>('');
 
-  // If active user is student, render dedicated isolated student attendance view
-  if (currentRole === 'student') {
-    const student =
-      (currentUser.referenceId ? studentService.getById(currentUser.referenceId) : null) ||
-      studentService.getAll().find(s => s.fullName.toLowerCase() === currentUser.name.toLowerCase()) ||
-      studentService.getAll()[0];
+  useEffect(() => {
+    if (currentRole === 'parent' || currentRole === 'student') {
+      attendanceService.load();
+    }
+  }, [currentRole]);
 
-    return <StudentAttendanceView student={student} />;
-  }
-
-  // If active user is parent, render dedicated ward attendance view
-  if (currentRole === 'parent') {
-    const activeStudent = selectedChild || parentChildren[0];
-    if (!activeStudent) {
+  if (currentRole === 'parent' || currentRole === 'student') {
+    const active = linkedStudents.find(s => s.id === selectedId) || linkedStudents[0];
+    if (!active) {
       return (
         <div style={{ padding: '40px', textAlign: 'center', color: '#64748B' }}>
-          No linked student records found for this parent account.
+          No student record is linked to this account. Please contact the school office.
         </div>
       );
     }
     return (
       <StudentAttendanceView
-        student={activeStudent}
-        isParentView
-        childrenList={parentChildren}
-        onSelectChild={setSelectedChildId}
+        student={active}
+        isParentView={currentRole === 'parent'}
+        childrenList={currentRole === 'parent' ? linkedStudents : []}
+        onSelectChild={setSelectedId}
       />
     );
   }

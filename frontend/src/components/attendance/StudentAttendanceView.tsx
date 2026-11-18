@@ -3,7 +3,7 @@
 // Developed by NTS Novalytix
 // ==========================================
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Student } from '../../types';
 import { attendanceService } from '../../services/attendanceService';
@@ -25,16 +25,22 @@ export const StudentAttendanceView: React.FC<StudentAttendanceViewProps> = ({
 }) => {
   const navigate = useNavigate();
   const [selectedMonth, setSelectedMonth] = useState<string>('all');
+  const [dataVersion, setDataVersion] = useState(0);
+  useEffect(() => {
+    const onUpdate = () => setDataVersion(v => v + 1);
+    window.addEventListener('nts_erp_storage_updated', onUpdate);
+    return () => window.removeEventListener('nts_erp_storage_updated', onUpdate);
+  }, []);
 
   // Attendance stats dynamically calculated from recorded records
   const attStats = useMemo(() => {
     return attendanceService.calculateStudentPercentage(student.id);
-  }, [student.id]);
+  }, [student.id, dataVersion]);
 
   // Attendance records for this student
   const allRecords = useMemo(() => {
     return attendanceService.getByStudentId(student.id).sort((a, b) => b.date.localeCompare(a.date));
-  }, [student.id]);
+  }, [student.id, dataVersion]);
 
   // Filter records by selected month if requested
   const filteredRecords = useMemo(() => {

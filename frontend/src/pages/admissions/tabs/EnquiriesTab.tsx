@@ -7,6 +7,7 @@ import { Pagination } from '../../../components/common/Pagination';
 import { formatDate } from '../../../utils/formatters';
 import { exportToCSV } from '../../../utils/export';
 import { UserPlus, Download, RotateCcw, Eye, PhoneCall, FileText } from 'lucide-react';
+import { todayISO } from '../../../utils/date';
 
 interface EnquiriesTabProps {
   enquiries: AdmissionEnquiry[];
@@ -128,7 +129,7 @@ export const EnquiriesTab: React.FC<EnquiriesTabProps> = ({
     }
   };
 
-  const todayStr = new Date().toISOString().split('T')[0];
+  const todayStr = todayISO();
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>

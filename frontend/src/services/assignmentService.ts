@@ -12,6 +12,7 @@ import {
 } from '../types';
 import { ERPStorage } from './storage';
 import { resolveStaffId } from './staffGroupService';
+import { todayISO } from '../utils/date';
 
 export interface SubmitHomeworkInput {
   studentId: string;
@@ -225,7 +226,7 @@ export const assignmentService = {
       studentId: student.id,
       studentName: student.name,
       teacherId: assignment.teacherId,
-      submissionDate: new Date().toISOString().split('T')[0],
+      submissionDate: todayISO(),
       createdAt: existing?.createdAt || new Date().toISOString(),
       updatedAt: new Date().toISOString(),
       submissionText: submissionText.trim(),
@@ -303,7 +304,7 @@ export const assignmentService = {
       studentId: student.id,
       studentName: student.name,
       teacherId: assignment.teacherId,
-      submissionDate: new Date().toISOString().split('T')[0],
+      submissionDate: todayISO(),
       submittedAt: new Date().toISOString(),
       createdAt: existing?.createdAt || new Date().toISOString(),
       updatedAt: new Date().toISOString(),

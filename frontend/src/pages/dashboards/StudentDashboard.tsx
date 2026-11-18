@@ -32,18 +32,15 @@ import {
 
 export const StudentDashboard: React.FC = () => {
   const navigate = useNavigate();
-  const { currentUser, schoolSettings } = useERP();
+  const { currentUser, schoolSettings, linkedStudents } = useERP();
 
   // Load student profile dynamically for logged-in user
   const student =
     (currentUser.referenceId ? studentService.getById(currentUser.referenceId) : null) ||
-    studentService.getAll().find(s => s.fullName.toLowerCase() === currentUser.name.toLowerCase()) ||
-    studentService.getAll()[0];
+    studentService.getAll().find(s => s.fullName.toLowerCase() === currentUser.name.toLowerCase());
 
-  // Attendance metrics
-  const attStats = student
-    ? attendanceService.calculateStudentPercentage(student.id)
-    : { percentage: 100, present: 0, late: 0, excused: 0, absent: 0, total: 0, isMarked: false };
+  // Attendance metrics from the server for this student's own record
+  const attStats = attendanceService.calculateStudentPercentage(linkedStudents[0]?.id || '');
 
   // Timetable dynamically filtered by current day of week (Mon-Sat school week)
   const SCHOOL_DAYS: DayOfWeek[] = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
@@ -265,7 +262,7 @@ export const StudentDashboard: React.FC = () => {
           </div>
           <div className="card-body" style={{ padding: '0' }}>
             {assignments.map(asg => {
-              const mySub = asg.submissions.find(s => s.studentId === student.id);
+              const mySub = asg.submissions.find(s => s.studentId === student?.id);
               return (
                 <div
                   key={asg.id}

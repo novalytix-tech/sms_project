@@ -16,6 +16,7 @@ import {
 } from '../types/academicAwards';
 import { studentService } from './studentService';
 import { teacherService } from './teacherService';
+import { todayISO } from '../utils/date';
 
 export const academicAwardsService = {
   // ==========================================
@@ -115,7 +116,7 @@ export const academicAwardsService = {
       competitionId: data.competitionId,
       competitionName: data.competitionName,
       organizer: data.organizer,
-      awardDate: data.awardDate || new Date().toISOString().split('T')[0],
+      awardDate: data.awardDate || todayISO(),
       academicYear: data.academicYear || '2026-2027',
       awardedBy: data.awardedBy || 'Principal & School Management',
       description: data.description || '',
@@ -457,7 +458,7 @@ export const academicAwardsService = {
       awardTitle: payload.awardTitle.trim(),
       category: payload.category || 'Academic Excellence',
       description: payload.description || '',
-      recognitionDate: payload.recognitionDate || new Date().toISOString().split('T')[0],
+      recognitionDate: payload.recognitionDate || todayISO(),
       academicYear: payload.academicYear || '2026-2027',
       awardedBy: payload.awardedBy || 'Principal & School Board',
       photoUrl: teacher?.photoUrl || payload.photoUrl || '/teacher-female.svg',
@@ -550,7 +551,7 @@ export const academicAwardsService = {
         position: award.position,
         certificateNo: certNo,
         template: payload.template || 'academic_excellence',
-        issuedDate: new Date().toISOString().split('T')[0],
+        issuedDate: todayISO(),
         principalName: payload.principalName || 'Dr. Arvind Swaminathan',
         verificationCode,
         qrCodeUrl: `https://stxaviers.edu.in/verify/${verificationCode}`,
@@ -575,7 +576,7 @@ export const academicAwardsService = {
         categoryName: rec.category,
         certificateNo: certNo,
         template: payload.template || 'staff_appreciation',
-        issuedDate: new Date().toISOString().split('T')[0],
+        issuedDate: todayISO(),
         principalName: payload.principalName || 'Dr. Arvind Swaminathan',
         verificationCode,
         qrCodeUrl: `https://stxaviers.edu.in/verify/${verificationCode}`,

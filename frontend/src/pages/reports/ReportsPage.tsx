@@ -14,6 +14,7 @@ import { formatCurrencyINR, formatDate } from '../../utils/formatters';
 import { Badge } from '../../components/common/Badge';
 import './reports.css';
 import { BarChart3, Download, Printer, FileSpreadsheet, Users, IndianRupee, CalendarCheck, BookOpen, Briefcase, Bus, Megaphone, Building2, Layers, ShieldCheck, History, AlertCircle, CheckCircle, Lock, ArrowRight } from 'lucide-react';
+import { todayISO } from '../../utils/date';
 
 export const ReportsPage: React.FC = () => {
   const { currentRole, currentUser, schoolSettings, addToast } = useERP();
@@ -62,7 +63,7 @@ export const ReportsPage: React.FC = () => {
 
   // 3. Sub-Filters State
   const [academicYear, setAcademicYear] = useState<string>('2026-2027');
-  const [reportDate, setReportDate] = useState<string>(() => new Date().toISOString().split('T')[0]);
+  const [reportDate, setReportDate] = useState<string>(() => todayISO());
   const [filterClassId, setFilterClassId] = useState<string>('');
 
   // Classes available strictly for the selected school (strictly filtered, zero unsafe fallbacks)

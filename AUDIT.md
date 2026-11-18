@@ -21,6 +21,7 @@ Audit and cleanup done on 2026-11-18, starting from the uploaded zip (git tag `p
 | 13 | Default `SECRET_KEY`/`JWT_SECRET_KEY` fallbacks, `CORS *` on Socket.IO, debug server in `wsgi.py` | Insecure defaults | App refuses to start without required env vars; strict CORS; gunicorn in production |
 | 14 | Error responses included raw DB errors and Postgres version on `/health` | Information disclosure | Generic messages; health returns only up/down |
 | 15 | Payment / application / paper numbers built from the current second → duplicate key errors under load | Failed payments | Unique random suffix |
+| 17 | "Today" was computed in UTC across the app, so in India records made before 05:30 IST got yesterday's date | Wrong attendance/fee dates | Local-date helper used everywhere (`utils/date.ts`) |
 | 16 | Source maps and `console.*` in production build | Source + data exposure | Disabled / stripped |
 
 ## 2. What was removed (dead or unsafe code)
@@ -47,11 +48,15 @@ unused packages (`@xyflow/react`, `date-fns`, `recharts`, `@testing-library/user
   linked children's invoices, students only their own, teachers none. The browser-side fee demo data and the
   fake "online payment" simulator were removed; parents get the school's payment instructions instead.
   Online payment requires integrating a gateway (e.g. Razorpay) with signed webhooks — not done yet.
+- **Attendance (migrated 2026-11-19):** student roll call and staff attendance live in the database.
+  Teachers can only mark and read classes they teach or are class teacher of; parents see only their linked
+  children; students only themselves; staff corrections need a reason and are audit-logged. Leave approval is
+  still demo-only, so the "on approved leave" hint in the staff roster comes from the browser-side leave module.
 - Read-only hydration for staff of classes, teachers, books, notices, transport routes
 
 **Still demo-only — data lives in each browser's localStorage, seeded from `frontend/src/data/seedData.ts`:**
 
-Attendance (students and staff), assignments/homework, examinations, grading and report cards, question papers,
+Assignments/homework, examinations, grading and report cards, question papers,
 timetable, calendar, notices, messages, staff and class groups, leave, library (books, loans, fines),
 transport (trips, GPS, safety events), admissions pipeline (beyond web enquiries), academic awards, digital marketing,
 service entitlements, suppliers, institutions management, reports, notifications, promotions.
@@ -64,14 +69,14 @@ For most of them the backend already has matching tables and secured endpoints
 and then deleting its localStorage code. The temporary bridge for these modules is
 `frontend/src/data/legacyReferenceIds.ts`; delete it once the last module is migrated.
 
-Recommended order (highest business risk first): ~~fees/invoices~~ (done) → attendance → examinations & results →
+Recommended order (highest business risk first): ~~fees/invoices~~ (done) → ~~attendance~~ (done) → examinations & results →
 library → notices & messages → leave → timetable → transport → everything else.
 
 ## 4. Verification done
 
-- Backend: 70 automated tests pass (12 of them for fees) (auth, forged/expired/foreign-origin tokens, unprovisioned and deactivated users,
+- Backend: 76 automated tests pass (12 for fees, 8 for attendance) (auth, forged/expired/foreign-origin tokens, unprovisioned and deactivated users,
   role checks, parent–child access, cross-school isolation, header spoofing, public enquiry, plus the existing module and workflow tests).
-- Frontend: type-check clean, 219 unit tests pass (Clerk mocked), production build succeeds.
+- Frontend: type-check clean, 221 unit tests pass (Clerk mocked), production build succeeds.
 - Production bundle scanned: no demo passwords, no `sk_` keys, no token storage keys, no source maps, no `console.log`.
 - Running locally: `/health` 200; protected routes 401 without a token or with a forged token; no CORS for unknown origins;
   security headers present; database migrations apply cleanly and match the models; RLS enabled on all 87 tables.

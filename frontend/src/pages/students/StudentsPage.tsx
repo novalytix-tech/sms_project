@@ -31,6 +31,7 @@ import { httpClient } from '../../services/api/httpClient';
 import { ImportProgressModal, ImportProgressState } from '../../components/common/ImportProgressModal';
 import { ImportSummaryModal, ImportSummary, ImportRowError } from '../../components/common/ImportSummaryModal';
 import { Eye, Edit, Trash2, Power, RotateCcw } from 'lucide-react';
+import { todayISO } from '../../utils/date';
 
 /**
  * Faculty & Administrative Student Directory Manager
@@ -125,7 +126,7 @@ const StudentDirectoryManager: React.FC = () => {
     section: 'A',
     rollNo: '',
     academicYear: '2026-2027',
-    admissionDate: new Date().toISOString().split('T')[0],
+    admissionDate: todayISO(),
     parentName: '',
     parentPhone: '',
     parentEmail: '',
@@ -157,7 +158,7 @@ const StudentDirectoryManager: React.FC = () => {
       section: 'A',
       rollNo: nextRoll,
       academicYear: '2026-2027',
-      admissionDate: new Date().toISOString().split('T')[0],
+      admissionDate: todayISO(),
       parentName: '',
       parentPhone: '',
       parentEmail: '',

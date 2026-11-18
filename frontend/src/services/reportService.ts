@@ -6,11 +6,13 @@
 
 import { ERPStorage } from './storage';
 import { feeService } from './feeService';
+import { attendanceService } from './attendanceService';
 import { institutionService } from './institutionService';
 import { serviceEntitlementService } from './serviceEntitlementService';
 import { schoolMigrationService, MigrationAuditResult } from './schoolMigrationService';
 import { Student, Teacher, FeeInvoice, AdmissionApplication, TransportRoute, Institution, Examination } from '../types';
 import { MarketingCampaign, MarketingLead, SchoolServiceConfiguration, ServiceEntitlementAuditLog } from '../types/serviceEntitlement';
+import { todayISO } from '../utils/date';
 
 export type ReportCategory =
   | 'students'
@@ -352,8 +354,8 @@ export const reportService = {
       students = students.filter(s => s.classId === filters.classId);
     }
 
-    const reportDate = filters.date || new Date().toISOString().split('T')[0];
-    const allAttendance = reportService.filterBySchool(store.attendance || [], filters.schoolId);
+    const reportDate = filters.date || todayISO();
+    const allAttendance = attendanceService.getAll() /* already scoped to this school by the backend */;
     const dayRecords = allAttendance.filter(r => r.date === reportDate);
 
     let recordedCount = 0;

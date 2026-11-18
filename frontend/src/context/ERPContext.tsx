@@ -15,7 +15,10 @@ import { messageService } from '../services/messageService';
 import { notificationService } from '../services/notificationService';
 import { leaveService } from '../services/leaveService';
 import { feeService } from '../services/feeService';
+import { attendanceService } from '../services/attendanceService';
+import { staffAttendanceService } from '../services/staffAttendanceService';
 import { studentService } from '../services/studentService';
+import { todayISO, daysAgoISO } from '../utils/date';
 
 export interface ToastMessage {
   id: string;
@@ -49,6 +52,9 @@ interface ERPContextType {
   pendingLeaveCount: number;
   overdueInvoicesCount: number;
 
+  // Students verified by the backend for this parent/student account
+  linkedStudents: Student[];
+
   // Parent Multi-Child Selector
   selectedChild: Student | undefined;
   parentChildren: Student[];
@@ -70,6 +76,31 @@ interface BackendProfile {
   avatar_url?: string | null;
   roles: UserRole[];
   institution_id: string | null;
+  references?: {
+    student_id?: string;
+    admission_number?: string;
+    linked_children?: { student_id: string; admission_number: string; first_name: string; last_name: string }[];
+  };
+}
+
+/** Students this account may see, as verified by the backend (parent's children or the student). */
+function linkedStudentsOf(p: BackendProfile | null): Student[] {
+  if (!p) return [];
+  const refs = p.references || {};
+  if (p.roles.includes('parent')) {
+    return (refs.linked_children || []).map(c => ({
+      id: c.student_id,
+      firstName: c.first_name,
+      lastName: c.last_name,
+      fullName: `${c.first_name} ${c.last_name}`.trim(),
+      admissionNo: c.admission_number,
+    }) as Student);
+  }
+  if (p.roles.includes('student') && refs.student_id) {
+    const [firstName, ...rest] = p.full_name.split(' ');
+    return [{ id: refs.student_id, firstName, lastName: rest.join(' '), fullName: p.full_name, admissionNo: refs.admission_number || '' } as Student];
+  }
+  return [];
 }
 
 const ROLE_PRIORITY: UserRole[] = ['super_admin', 'school_admin', 'teacher', 'parent', 'student', 'supplier'];
@@ -141,6 +172,7 @@ export const ERPProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const isAuthenticated = authStatus === 'ready';
   const currentUser = useMemo(() => (profile ? toUser(profile) : SIGNED_OUT_USER), [profile]);
   const currentRole = currentUser.role;
+  const linkedStudents = useMemo(() => linkedStudentsOf(profile), [profile]);
 
   const [schoolSettings, setSchoolSettings] = useState<SchoolSettings>(() => settingsService.get());
   const [storeVersion, setStoreVersion] = useState(0);
@@ -160,6 +192,24 @@ export const ERPProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       feeService.load();
     }
     if (!isAuthenticated) feeService.reset();
+  }, [isAuthenticated, currentRole]);
+
+  // Attendance from the backend: staff get today's classes (server limits teachers to their own),
+  // parents/students get their own history; teachers also get their own staff attendance.
+  useEffect(() => {
+    if (!isAuthenticated) {
+      attendanceService.reset();
+      staffAttendanceService.reset();
+      return;
+    }
+    const today = todayISO();
+    if (['super_admin', 'school_admin', 'teacher'].includes(currentRole)) {
+      attendanceService.load({ date: today });
+      const from = daysAgoISO(90);
+      staffAttendanceService.load(currentRole === 'teacher' ? { from } : { date: today });
+    } else if (['parent', 'student'].includes(currentRole)) {
+      attendanceService.load();
+    }
   }, [isAuthenticated, currentRole]);
 
   // Hydrate shared records from the backend for staff accounts.
@@ -311,6 +361,7 @@ export const ERPProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         deleteNotification,
         pendingLeaveCount,
         overdueInvoicesCount,
+        linkedStudents,
         selectedChild,
         parentChildren,
         setSelectedChildId,

@@ -1,156 +1,137 @@
-// ==========================================
-// Attendance Service - Mock Implementation
-// Developed by NTS Novalytix
-// ==========================================
+// Student attendance — backed by /api/v1/attendance/students.
+//
+// load() fetches records into an in-memory cache; synchronous getters read it.
+// Saving a roll call goes to the server first; the cache is refreshed afterwards.
+// The server decides who sees what: teachers only their classes, parents only
+// their linked children, students only themselves.
 
 import { AttendanceRecord, AttendanceStatus } from '../types';
-import { ERPStorage } from './storage';
+import { httpClient } from './api/httpClient';
+import { todayISO } from '../utils/date';
 
-export const attendanceService = {
-  getAll: (): AttendanceRecord[] => {
-    return ERPStorage.get().attendance;
-  },
-
-  getByClassAndDate: (classId: string, section: string, date: string): AttendanceRecord[] => {
-    return ERPStorage.get().attendance.filter(
-      a => a.classId === classId && a.section.toLowerCase() === section.toLowerCase() && a.date === date
-    );
-  },
-
-  getByDate: (date: string): AttendanceRecord[] => {
-    return ERPStorage.get().attendance.filter(a => a.date === date);
-  },
-
-  getByStudentId: (studentId: string): AttendanceRecord[] => {
-    return ERPStorage.get().attendance.filter(a => a.studentId === studentId);
-  },
-
-  saveRosterAttendance: (
-    records: Array<{
-      studentId: string;
-      classId: string;
-      section: string;
-      date: string;
-      status: AttendanceStatus | 'not_marked';
-      remarks?: string;
-    }>
-  ): { success: boolean; savedCount: number } => {
-    const store = ERPStorage.get();
-    let savedCount = 0;
-
-    records.forEach(rec => {
-      const existingIndex = store.attendance.findIndex(
-        a => a.studentId === rec.studentId && a.date === rec.date
-      );
-
-      if (rec.status === 'not_marked') {
-        // If status was reset to not marked, remove any existing record
-        if (existingIndex >= 0) {
-          store.attendance.splice(existingIndex, 1);
-        }
-      } else {
-        savedCount++;
-        if (existingIndex >= 0) {
-          // Update existing record
-          store.attendance[existingIndex] = {
-            ...store.attendance[existingIndex],
-            status: rec.status,
-            remarks: rec.remarks,
-          };
-        } else {
-          // Create new record
-          store.attendance.push({
-            id: `att-${Date.now()}-${Math.random().toString(36).substr(2, 6)}`,
-            studentId: rec.studentId,
-            classId: rec.classId,
-            section: rec.section,
-            date: rec.date,
-            status: rec.status,
-            remarks: rec.remarks,
-          });
-        }
-      }
-    });
-
-    ERPStorage.set(store);
-    return { success: true, savedCount };
-  },
-
-  calculateStudentPercentage: (
-    studentId: string
-  ): {
-    percentage: number;
-    present: number;
-    late: number;
-    excused: number;
-    absent: number;
-    total: number;
-    isMarked: boolean;
-  } => {
-    const records = ERPStorage.get().attendance.filter(
-      a => a.studentId === studentId && (['present', 'late', 'excused', 'absent'] as string[]).includes(a.status)
-    );
-
-    if (!records.length) {
-      return {
-        percentage: 100,
-        present: 0,
-        late: 0,
-        excused: 0,
-        absent: 0,
-        total: 0,
-        isMarked: false,
-      };
-    }
-
-    const presentCount = records.filter(r => r.status === 'present').length;
-    const lateCount = records.filter(r => r.status === 'late').length;
-    const excusedCount = records.filter(r => r.status === 'excused').length;
-    const absentCount = records.filter(r => r.status === 'absent').length;
-
-    // Attended sessions: present (full) + late (counted as attended)
-    const attendedCount = presentCount + lateCount;
-    const totalMarkedDays = records.length;
-    const percentage = totalMarkedDays > 0 ? Math.round((attendedCount / totalMarkedDays) * 100) : 100;
-
-    return {
-      percentage,
-      present: presentCount,
-      late: lateCount,
-      excused: excusedCount,
-      absent: absentCount,
-      total: totalMarkedDays,
-      isMarked: true,
-    };
-  },
-
-  calculateClassTodayPercentage: (classId: string, section?: string, date?: string): number => {
-    const targetDate = date || new Date().toISOString().split('T')[0];
-    const records = ERPStorage.get().attendance.filter(a => {
-      const matchClass = a.classId === classId;
-      const matchSection = section ? a.section.toLowerCase() === section.toLowerCase() : true;
-      const matchDate = a.date === targetDate;
-      return matchClass && matchSection && matchDate;
-    });
-
-    if (!records.length) return 0; // Honest zero when attendance has not been recorded
-    const present = records.filter(r => r.status === 'present' || r.status === 'late').length;
-    return Math.round((present / records.length) * 100);
-  },
-
-  calculateOverallTodayPercentage: (date?: string): { percentage: number; present: number; total: number; isMarked: boolean } => {
-    const targetDate = date || new Date().toISOString().split('T')[0];
-    const records = ERPStorage.get().attendance.filter(a => a.date === targetDate);
-    if (!records.length) {
-      return { percentage: 0, present: 0, total: 0, isMarked: false };
-    }
-    const present = records.filter(r => r.status === 'present' || r.status === 'late').length;
-    return {
-      percentage: Math.round((present / records.length) * 100),
-      present,
-      total: records.length,
-      isMarked: true,
-    };
-  },
+const cache: { records: AttendanceRecord[]; loaded: boolean; error: string | null } = {
+  records: [],
+  loaded: false,
+  error: null,
 };
 
+function notify() {
+  window.dispatchEvent(new CustomEvent('nts_erp_storage_updated'));
+}
+
+function key(r: AttendanceRecord) {
+  return `${r.studentId}|${r.date}`;
+}
+
+function merge(fresh: AttendanceRecord[], replace: (r: AttendanceRecord) => boolean) {
+  const kept = cache.records.filter(r => !replace(r));
+  const map = new Map(kept.map(r => [key(r), r]));
+  fresh.forEach(r => map.set(key(r), r));
+  cache.records = [...map.values()];
+}
+
+type Filters = { date?: string; classId?: string; studentId?: string; from?: string; to?: string };
+
+function percentageOf(records: AttendanceRecord[]) {
+  if (!records.length) {
+    return { percentage: 0, present: 0, late: 0, excused: 0, absent: 0, total: 0, isMarked: false };
+  }
+  const present = records.filter(r => r.status === 'present').length;
+  const late = records.filter(r => r.status === 'late').length;
+  const excused = records.filter(r => r.status === 'excused').length;
+  const absent = records.filter(r => r.status === 'absent').length;
+  return {
+    percentage: Math.round(((present + late) / records.length) * 100),
+    present,
+    late,
+    excused,
+    absent,
+    total: records.length,
+    isMarked: true,
+  };
+}
+
+export const attendanceService = {
+  /** Fetch records matching the filters and merge them into the cache. */
+  load: async (filters: Filters = {}): Promise<void> => {
+    const q = new URLSearchParams();
+    if (filters.date) q.set('date', filters.date);
+    if (filters.classId) q.set('class_id', filters.classId);
+    if (filters.studentId) q.set('student_id', filters.studentId);
+    if (filters.from) q.set('from', filters.from);
+    if (filters.to) q.set('to', filters.to);
+    const res = await httpClient.get<AttendanceRecord[]>(`/attendance/students?${q.toString()}`);
+    if (!res.success) {
+      cache.error = res.error?.message || 'Could not load attendance.';
+      cache.loaded = true;
+      notify();
+      return;
+    }
+    cache.error = null;
+    merge(res.data, r =>
+      (!filters.date || r.date === filters.date) &&
+      (!filters.classId || r.classId === filters.classId) &&
+      (!filters.studentId || r.studentId === filters.studentId) &&
+      (!filters.from || r.date >= filters.from) &&
+      (!filters.to || r.date <= filters.to),
+    );
+    cache.loaded = true;
+    notify();
+  },
+
+  reset: () => {
+    cache.records = [];
+    cache.loaded = false;
+    cache.error = null;
+  },
+
+  isLoaded: () => cache.loaded,
+  getLoadError: () => cache.error,
+
+  getAll: (): AttendanceRecord[] => cache.records,
+
+  getByClassAndDate: (classId: string, section: string, date: string): AttendanceRecord[] =>
+    cache.records.filter(
+      a => a.classId === classId && a.section.toLowerCase() === section.toLowerCase() && a.date === date,
+    ),
+
+  getByDate: (date: string): AttendanceRecord[] => cache.records.filter(a => a.date === date),
+
+  getByStudentId: (studentId: string): AttendanceRecord[] => cache.records.filter(a => a.studentId === studentId),
+
+  /** Student ids that appear in the loaded records (used for parent/student views). */
+  getStudentIds: (): string[] => [...new Set(cache.records.map(r => r.studentId))],
+
+  saveRosterAttendance: async (
+    classId: string,
+    date: string,
+    records: Array<{ studentId: string; status: AttendanceStatus | 'not_marked'; remarks?: string }>,
+  ): Promise<{ success: true; savedCount: number } | { success: false; error: string }> => {
+    const res = await httpClient.post<{ saved: number; removed: number }>('/attendance/students/batch', {
+      classId,
+      date,
+      records,
+    });
+    if (!res.success) {
+      return { success: false, error: res.error?.message || res.message || 'Could not save attendance.' };
+    }
+    await attendanceService.load({ classId, date });
+    return { success: true, savedCount: res.data.saved };
+  },
+
+  calculateStudentPercentage: (studentId: string) =>
+    percentageOf(cache.records.filter(a => a.studentId === studentId)),
+
+  calculateClassTodayPercentage: (classId: string, section?: string, date?: string): number => {
+    const target = date || todayISO();
+    const records = cache.records.filter(
+      a => a.classId === classId && (!section || a.section.toLowerCase() === section.toLowerCase()) && a.date === target,
+    );
+    return percentageOf(records).percentage;
+  },
+
+  calculateOverallTodayPercentage: (date?: string) => {
+    const p = percentageOf(cache.records.filter(a => a.date === (date || todayISO())));
+    return { percentage: p.percentage, present: p.present + p.late, total: p.total, isMarked: p.isMarked };
+  },
+};

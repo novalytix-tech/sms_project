@@ -7,6 +7,7 @@
 import { ERPStorage } from './storage';
 import { User } from '../types';
 import { QuestionPaper, QuestionPaperPreparationMethod, QuestionPaperStatus, ERPQuestionPaperContent, QuestionPaperImagePage, QuestionPaperVersionSnapshot, QuestionPaperReviewRecord } from '../types/questionPaper';
+import { todayISO } from '../utils/date';
 
 /**
  * Validates if the user is the authorized School Principal.
@@ -407,7 +408,7 @@ export const QuestionPaperService = {
         teacherEmail: paperData.teacherEmail || user.email,
         preparationMethod: paperData.preparationMethod || 'erp_editor',
         title: paperData.title || 'Untitled Question Paper',
-        examDate: paperData.examDate || new Date().toISOString().split('T')[0],
+        examDate: paperData.examDate || todayISO(),
         durationMinutes: paperData.durationMinutes || 180,
         maxMarks: paperData.maxMarks || 80,
         currentVersion: 1,

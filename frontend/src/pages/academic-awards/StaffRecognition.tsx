@@ -3,6 +3,7 @@ import { Users, Plus, Search, Award, FileCheck, Trash2, CheckCircle2, X } from '
 import { StaffRecognition as StaffRecognitionType } from '../../types/academicAwards';
 import { teacherService } from '../../services/teacherService';
 import { useERP } from '../../context/ERPContext';
+import { todayISO } from '../../utils/date';
 
 interface StaffRecognitionProps {
   recognitions: StaffRecognitionType[];
@@ -27,7 +28,7 @@ export const StaffRecognition: React.FC<StaffRecognitionProps> = ({
   const [selectedTeacherId, setSelectedTeacherId] = useState('');
   const [awardTitle, setAwardTitle] = useState('');
   const [category, setCategory] = useState('Academic Excellence');
-  const [recognitionDate, setRecognitionDate] = useState(new Date().toISOString().split('T')[0]);
+  const [recognitionDate, setRecognitionDate] = useState(todayISO());
   const [academicYear, setAcademicYear] = useState('2026-2027');
   const [awardedBy, setAwardedBy] = useState('Board of Trustees & Principal');
   const [description, setDescription] = useState('');
@@ -54,7 +55,7 @@ export const StaffRecognition: React.FC<StaffRecognitionProps> = ({
     setSelectedTeacherId(allTeachers[0]?.id || '');
     setAwardTitle('');
     setCategory('Academic Excellence');
-    setRecognitionDate(new Date().toISOString().split('T')[0]);
+    setRecognitionDate(todayISO());
     setAcademicYear('2026-2027');
     setAwardedBy('Board of Trustees & Principal Dr. Arvind Swaminathan');
     setDescription('');

@@ -12,6 +12,7 @@ import { LibraryBook, LibraryCopy, LibraryMember, LibraryLoan, LibraryFine, Libr
 import { getTeacherLibraryAssignment } from '../../utils/permissions';
 import { BookMarked, BookOpen, Search, Plus, ArrowRightLeft, CalendarCheck, AlertTriangle, Users, IndianRupee, ShieldCheck, RotateCcw, CheckCircle, FileText, Barcode, Settings, X, Send, Eye, TrendingUp, Download, Clock, UserCheck, AlertCircle, Package, GraduationCap } from 'lucide-react';
 import './library.css';
+import { todayISO } from '../../utils/date';
 
 export const LibraryManagementPage: React.FC = () => {
   const { currentUser, currentRole, addToast } = useERP();
@@ -1539,7 +1540,7 @@ export const LibraryManagementPage: React.FC = () => {
                     </div>
 
                     {/* Overdue calculation check */}
-                    {new Date().toISOString().split('T')[0] > returnSelectedLoan.dueDate && (
+                    {todayISO() > returnSelectedLoan.dueDate && (
                       <div style={{ marginTop: '10px', padding: '8px 12px', background: '#fef2f2', border: '1px solid #fecaca', borderRadius: '6px', fontSize: '12px', color: '#3B82F6' }}>
                         <strong>Overdue Alert:</strong> Book is overdue. Fine policy applies beyond {settings.gracePeriodDays} days grace period.
                       </div>
@@ -1707,7 +1708,7 @@ export const LibraryManagementPage: React.FC = () => {
                 </tr>
               </thead>
               <tbody>
-                {loans.filter(l => l.status === 'overdue' || (l.status === 'borrowed' && l.dueDate < new Date().toISOString().split('T')[0])).length === 0 ? (
+                {loans.filter(l => l.status === 'overdue' || (l.status === 'borrowed' && l.dueDate < todayISO())).length === 0 ? (
                   <tr>
                     <td colSpan={8} style={{ textAlign: 'center', padding: '30px', color: '#64748b' }}>
                       No overdue books currently recorded. Excellent circulation compliance!
@@ -1715,7 +1716,7 @@ export const LibraryManagementPage: React.FC = () => {
                   </tr>
                 ) : (
                   loans
-                    .filter(l => l.status === 'overdue' || (l.status === 'borrowed' && l.dueDate < new Date().toISOString().split('T')[0]))
+                    .filter(l => l.status === 'overdue' || (l.status === 'borrowed' && l.dueDate < todayISO()))
                     .map(l => (
                       <tr key={l.id}>
                         <td><span className="lib-accession-code">{l.accessionNumber}</span></td>

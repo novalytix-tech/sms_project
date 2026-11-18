@@ -2,6 +2,7 @@ import React, { useState, useMemo } from 'react';
 import { AdmissionApplication, AdmissionEnquiry, AdmissionFollowUp, ClassAdmissionCapacity } from '../../../types';
 
 import { Users, UserPlus, Clock, Calendar, CreditCard, CheckCircle, XCircle, Award, TrendingUp, PieChart as PieIcon, PhoneCall, AlertTriangle } from 'lucide-react';
+import { todayISO } from '../../../utils/date';
 
 interface OverviewTabProps {
   enquiries: AdmissionEnquiry[];
@@ -83,7 +84,7 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({
   }, [sessionEnquiries, sessionApplications, confirmedAdmissions]);
 
   // Follow-up reminders
-  const todayStr = new Date().toISOString().split('T')[0];
+  const todayStr = todayISO();
   const todayFollowUps = followUps.filter(f => f.followUpDate === todayStr && f.status !== 'Completed');
   const overdueFollowUps = followUps.filter(f => f.followUpDate < todayStr && f.status !== 'Completed');
 

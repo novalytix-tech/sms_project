@@ -17,6 +17,7 @@ import {
   LibrarySettings,
 } from '../types';
 import { ERPStorage } from './storage';
+import { todayISO } from '../utils/date';
 
 const DEFAULT_SETTINGS: LibrarySettings = {
   institutionId: 'inst-1',
@@ -132,7 +133,7 @@ export const libraryService = {
         condition: 'good',
         status: 'available',
         shelfLocation: newBook.shelfLocation,
-        acquisitionDate: new Date().toISOString().split('T')[0],
+        acquisitionDate: todayISO(),
         purchasePrice: newBook.purchasePrice,
         institutionId: 'inst-1',
       });
@@ -224,7 +225,7 @@ export const libraryService = {
       condition: data.condition || 'good',
       status: 'available',
       shelfLocation: data.shelfLocation || book.shelfLocation,
-      acquisitionDate: new Date().toISOString().split('T')[0],
+      acquisitionDate: todayISO(),
       purchasePrice: data.purchasePrice || book.purchasePrice,
       institutionId: 'inst-1',
     };
@@ -266,7 +267,7 @@ export const libraryService = {
         condition,
         status: 'available',
         shelfLocation: shelfLocation || book.shelfLocation,
-        acquisitionDate: new Date().toISOString().split('T')[0],
+        acquisitionDate: todayISO(),
         purchasePrice: book.purchasePrice,
         institutionId: 'inst-1',
       };
@@ -353,7 +354,7 @@ export const libraryService = {
       status: 'active',
       maxBorrowLimit: maxLimit,
       currentIssuedCount: 0,
-      membershipStartDate: new Date().toISOString().split('T')[0],
+      membershipStartDate: todayISO(),
       membershipExpiryDate: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
       totalBorrowedCount: 0,
       outstandingFine: 0,
@@ -392,7 +393,7 @@ export const libraryService = {
 
   getOverdueLoans(): LibraryLoan[] {
     const loans = this.getAllLoans();
-    const today = new Date().toISOString().split('T')[0];
+    const today = todayISO();
     return loans.filter(l => (l.status === 'borrowed' || l.status === 'issued' || l.status === 'overdue') && l.dueDate < today);
   },
 
@@ -564,7 +565,7 @@ export const libraryService = {
         return { success: false, error: 'This book loan has already been recorded as returned.' };
       }
 
-      const returnDate = new Date().toISOString().split('T')[0];
+      const returnDate = todayISO();
       const dueDate = new Date(loan.dueDate);
       const actualReturnDate = new Date(returnDate);
 
@@ -747,7 +748,7 @@ export const libraryService = {
         memberName: member.name,
         memberType: member.memberType,
         memberCode: member.code,
-        requestDate: new Date().toISOString().split('T')[0],
+        requestDate: todayISO(),
         queuePosition,
         status: 'pending',
         notes: params.notes,
@@ -801,7 +802,7 @@ export const libraryService = {
     fine.paidAmount += params.paidAmount;
     fine.balance = Math.max(0, fine.amount - fine.paidAmount - fine.waiverAmount);
     fine.status = fine.balance === 0 ? 'paid' : 'partially_paid';
-    fine.paymentDate = new Date().toISOString().split('T')[0];
+    fine.paymentDate = todayISO();
     fine.paymentMethod = params.paymentMethod;
     fine.receiptNumber = params.receiptNumber;
 
@@ -864,7 +865,7 @@ export const libraryService = {
       id: `audit-${Date.now()}`,
       sessionName: params.sessionName,
       institutionId: 'inst-1',
-      startDate: new Date().toISOString().split('T')[0],
+      startDate: todayISO(),
       status: 'in_progress',
       totalRegisteredCopies: totalCopies,
       verifiedCopiesCount: 0,
@@ -924,7 +925,7 @@ export const libraryService = {
     if (!audit) throw new Error('Audit session not found');
 
     audit.status = 'completed';
-    audit.completedDate = new Date().toISOString().split('T')[0];
+    audit.completedDate = todayISO();
     audit.missingCopiesCount = Math.max(0, audit.totalRegisteredCopies - audit.verifiedCopiesCount);
     if (remarks) audit.remarks = remarks;
 
@@ -957,7 +958,7 @@ export const libraryService = {
     assignments.forEach(a => {
       if (a.teacherId === params.teacherId && a.status === 'active') {
         a.status = 'revoked';
-        a.revokedDate = new Date().toISOString().split('T')[0];
+        a.revokedDate = todayISO();
         a.revokedBy = params.assignedBy;
       }
     });
@@ -972,7 +973,7 @@ export const libraryService = {
       roleTitle: params.roleTitle,
       permissions: params.permissions,
       assignedBy: params.assignedBy,
-      assignedDate: new Date().toISOString().split('T')[0],
+      assignedDate: todayISO(),
       status: 'active',
     };
 
@@ -990,7 +991,7 @@ export const libraryService = {
     if (!assignment) return false;
 
     assignment.status = 'revoked';
-    assignment.revokedDate = new Date().toISOString().split('T')[0];
+    assignment.revokedDate = todayISO();
     assignment.revokedBy = revokedBy;
 
     (store as any).libraryStaffAssignments = assignments;
@@ -1010,7 +1011,7 @@ export const libraryService = {
     const reservations = this.getAllReservations();
     const members = this.getAllMembers();
 
-    const todayStr = new Date().toISOString().split('T')[0];
+    const todayStr = todayISO();
 
     const activeLoans = loans.filter(l => l.status === 'borrowed' || l.status === 'issued' || l.status === 'overdue');
     const overdueLoans = activeLoans.filter(l => l.dueDate < todayStr);

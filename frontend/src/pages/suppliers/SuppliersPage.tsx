@@ -12,6 +12,7 @@ import { useERP } from '../../context/ERPContext';
 import { ListToolbar, ListToolbarColumn } from '../../components/common/ListToolbar';
 import { formatCurrencyINR, formatDate } from '../../utils/formatters';
 import { Plus, Eye } from 'lucide-react';
+import { todayISO } from '../../utils/date';
 
 export const SuppliersPage: React.FC = () => {
   const { currentRole, addToast } = useERP();
@@ -44,7 +45,7 @@ export const SuppliersPage: React.FC = () => {
       supplierId: 'supp-1',
       supplierName: newOrderForm.supplierName,
       category: newOrderForm.category,
-      orderDate: new Date().toISOString().split('T')[0],
+      orderDate: todayISO(),
       expectedDeliveryDate: newOrderForm.expectedDeliveryDate,
       deliveryStatus: 'pending',
       items: [

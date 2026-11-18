@@ -1,3 +1,4 @@
+import { todayISO } from './date';
 // ==========================================
 // School ERP CSV & JSON Export / Backup Utilities
 // Developed by NTS Novalytix
@@ -18,7 +19,7 @@ export function exportToCSV(filename: string, headers: string[], rows: (string |
   const link = document.createElement('a');
   const url = URL.createObjectURL(blob);
   link.setAttribute('href', url);
-  link.setAttribute('download', `${filename}_${new Date().toISOString().split('T')[0]}.csv`);
+  link.setAttribute('download', `${filename}_${todayISO()}.csv`);
   document.body.appendChild(link);
   link.click();
   document.body.removeChild(link);

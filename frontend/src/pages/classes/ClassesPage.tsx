@@ -24,6 +24,7 @@ import { pickField } from '../../utils/csv';
 import { SearchInput } from '../../components/common/SearchInput';
 import { BookOpen, Plus, Edit, Trash2, Users, Calendar, TrendingUp, UserCheck, UserMinus, ArrowLeftRight, Download, AlertTriangle, CheckCircle2, FileSpreadsheet, History, Sparkles, ShieldCheck, MessageSquare } from 'lucide-react';
 import './ClassesPage.css';
+import { todayISO } from '../../utils/date';
 
 type AdminTab = 'classes' | 'sessions' | 'promotion' | 'import';
 
@@ -138,7 +139,7 @@ export const ClassesPage: React.FC = () => {
     // Calculate real attendance rate from attendanceService
     const attList = attendanceService.getByClassAndDate(
       activeClassTeacherClass.id,
-      new Date().toISOString().split('T')[0],
+      todayISO(),
       activeClassTeacherClass.section
     );
     const presentCount = attList.filter(a => a.status === 'present').length;
@@ -763,7 +764,7 @@ export const ClassesPage: React.FC = () => {
         section: activeClassTeacherClass.section,
         rollNo: registerFormData.rollNo,
         academicYear: currentSession.name,
-        admissionDate: new Date().toISOString().split('T')[0],
+        admissionDate: todayISO(),
         status: 'active',
       },
       classId: activeClassTeacherClass.id,

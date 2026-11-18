@@ -18,6 +18,7 @@ import { ListToolbar } from '../../components/common/ListToolbar';
 import { formatDate } from '../../utils/formatters';
 import { FileText, Plus, Edit, Trash2, Calendar, CheckCircle, Clock, Send, Award, AlertCircle, Paperclip, Save, RotateCcw, Eye, X } from 'lucide-react';
 import './AssignmentsPage.css';
+import { todayISO } from '../../utils/date';
 
 export const AssignmentsPage: React.FC = () => {
   const { currentRole, currentUser, selectedChild, addToast } = useERP();
@@ -99,7 +100,7 @@ export const AssignmentsPage: React.FC = () => {
     classId: allowedClasses[0]?.id || 'cls-10a',
     section: allowedClasses[0]?.section || 'A',
     subject: 'Mathematics',
-    assignedDate: new Date().toISOString().split('T')[0],
+    assignedDate: todayISO(),
     dueDate: new Date(Date.now() + 7 * 86400000).toISOString().split('T')[0],
     maxScore: 25,
     status: 'active' as 'active' | 'closed',
@@ -244,7 +245,7 @@ export const AssignmentsPage: React.FC = () => {
       classId: allowedClasses[0]?.id || 'cls-10a',
       section: allowedClasses[0]?.section || 'A',
       subject: 'Mathematics',
-      assignedDate: new Date().toISOString().split('T')[0],
+      assignedDate: todayISO(),
       dueDate: new Date(Date.now() + 7 * 86400000).toISOString().split('T')[0],
       maxScore: 25,
       status: 'active',

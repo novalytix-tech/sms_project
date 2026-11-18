@@ -4,6 +4,7 @@ import { classService } from '../../../services/classService';
 import { formatDate, formatCurrencyINR } from '../../../utils/formatters';
 import { exportToCSV } from '../../../utils/export';
 import { Download, Printer } from 'lucide-react';
+import { todayISO } from '../../../utils/date';
 
 interface ReportsTabProps {
   enquiries: AdmissionEnquiry[];
@@ -209,7 +210,7 @@ export const ReportsTab: React.FC<ReportsTabProps> = ({
       }
 
       case 'followup_pending': {
-        const todayStr = new Date().toISOString().split('T')[0];
+        const todayStr = todayISO();
         const rows = filteredEnquiries
           .filter(e => e.status !== 'Converted' && e.status !== 'Lost' && e.nextFollowUpDate)
           .map(e => [

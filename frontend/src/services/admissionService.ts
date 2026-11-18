@@ -10,6 +10,7 @@ import { studentService } from './studentService';
 import { classService } from './classService';
 
 import { INITIAL_CLASS_CAPACITIES } from '../data/admissionSeedData';
+import { todayISO } from '../utils/date';
 
 export const STANDARD_ADMISSION_DOCUMENTS: Array<{ id: string; title: string; required: boolean; category?: string }> = [
   { id: 'doc-birth', title: 'Birth Certificate / Proof of Date of Birth', required: true, category: 'Identity' },
@@ -366,14 +367,14 @@ export const admissionService = {
 
     doc.submitted = true;
     doc.verified = verified;
-    doc.verificationDate = verified ? new Date().toISOString().split('T')[0] : undefined;
+    doc.verificationDate = verified ? todayISO() : undefined;
     if (notes) doc.notes = notes;
 
     // Check if all required documents are verified
     const allRequiredVerified = app.documents.filter(d => d.required).every(d => d.verified);
     app.checklist.documentsVerified = allRequiredVerified;
     app.documentStatus = allRequiredVerified ? 'Verified' : 'Under Verification';
-    app.updatedAt = new Date().toISOString().split('T')[0];
+    app.updatedAt = todayISO();
 
     ERPStorage.set(store);
 
@@ -413,7 +414,7 @@ export const admissionService = {
     app.checklist.documentsVerified = false;
     app.documentStatus = 'Rejected';
     app.stage = 'documents_pending';
-    app.updatedAt = new Date().toISOString().split('T')[0];
+    app.updatedAt = todayISO();
 
     ERPStorage.set(store);
 
@@ -446,7 +447,7 @@ export const admissionService = {
       ...app.checklist,
       ...checklistUpdates,
     };
-    app.updatedAt = new Date().toISOString().split('T')[0];
+    app.updatedAt = todayISO();
 
     ERPStorage.set(store);
     return { success: true, data: app };
@@ -608,7 +609,7 @@ export const admissionService = {
     const section = options.section || app.targetSection || targetClass?.section || 'A';
     const rollNo = options.rollNo || `${targetClass?.name.replace('Class ', '') || '10'}${section}-${Math.floor(10 + Math.random() * 89)}`;
 
-    const dateStr = new Date().toISOString().split('T')[0];
+    const dateStr = todayISO();
     const timestampStr = new Date().toISOString().replace('T', ' ').substring(0, 16);
 
     // Call studentService.create
@@ -796,7 +797,7 @@ export const admissionService = {
       uniqueSeq = Math.floor(100 + Math.random() * 900);
     }
     const enquiryNo = `ENQ-2026-0${uniqueSeq}`;
-    const dateStr = new Date().toISOString().split('T')[0];
+    const dateStr = todayISO();
 
     const newEnquiry: AdmissionEnquiry = {
       ...data,
@@ -837,7 +838,7 @@ export const admissionService = {
     if (index === -1) return { success: false, error: 'Enquiry record not found.' };
 
     const existing = store.admissionEnquiries[index];
-    const dateStr = new Date().toISOString().split('T')[0];
+    const dateStr = todayISO();
 
     const updated: AdmissionEnquiry = {
       ...existing,
@@ -962,7 +963,7 @@ export const admissionService = {
     const newFollowUp: AdmissionFollowUp = {
       ...data,
       id: `fup-${Date.now()}`,
-      createdAt: new Date().toISOString().split('T')[0],
+      createdAt: todayISO(),
       institutionId: data.institutionId || 'inst-1',
     };
 
@@ -1003,7 +1004,7 @@ export const admissionService = {
     completed: AdmissionFollowUp[];
   } => {
     const all = admissionService.getAllFollowUps();
-    const today = todayStr || new Date().toISOString().split('T')[0];
+    const today = todayStr || todayISO();
 
     const todayItems: AdmissionFollowUp[] = [];
     const overdueItems: AdmissionFollowUp[] = [];
@@ -1105,7 +1106,7 @@ export const admissionService = {
       app.stage = 'approved';
       app.checklist.principalApproved = true;
       app.offer = newOffer;
-      app.updatedAt = new Date().toISOString().split('T')[0];
+      app.updatedAt = todayISO();
     }
 
     ERPStorage.set(store);

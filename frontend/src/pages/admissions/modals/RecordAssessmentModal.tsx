@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Modal } from '../../../components/common/Modal';
 import { AdmissionApplication } from '../../../types';
 import { admissionService } from '../../../services/admissionService';
+import { todayISO } from '../../../utils/date';
 
 interface RecordAssessmentModalProps {
   isOpen: boolean;
@@ -17,7 +18,7 @@ export const RecordAssessmentModal: React.FC<RecordAssessmentModalProps> = ({
   onSuccess,
 }) => {
   const [assessmentType, setAssessmentType] = useState<'Written Test' | 'Oral Interview' | 'Interaction / Observation' | 'Parent Interview' | 'Exempted'>('Written Test');
-  const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
+  const [date, setDate] = useState(todayISO());
   const [subject, setSubject] = useState('Mathematics, Science & English');
   const [marks, setMarks] = useState(82);
   const [maxMarks, setMaxMarks] = useState(100);

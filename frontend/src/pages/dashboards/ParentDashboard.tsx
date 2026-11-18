@@ -21,7 +21,7 @@ import { Users, CalendarCheck, Award, IndianRupee, FileText, Bus, MessageSquare,
 
 export const ParentDashboard: React.FC = () => {
   const navigate = useNavigate();
-  const { selectedChild, parentChildren, setSelectedChildId, schoolSettings } = useERP();
+  const { selectedChild, parentChildren, setSelectedChildId, schoolSettings, linkedStudents } = useERP();
 
   // If no child is linked to the parent account, show a clear empty state rather than another student's record
   if (!selectedChild) {
@@ -36,8 +36,11 @@ export const ParentDashboard: React.FC = () => {
     );
   }
 
-  // Attendance metrics for selected child
-  const attStats = attendanceService.calculateStudentPercentage(selectedChild.id);
+  // Attendance metrics from the server for the parent's verified child
+  // (matched by admission number when the demo child list and server records differ)
+  const verifiedChild =
+    linkedStudents.find(s => s.admissionNo && s.admissionNo === selectedChild.admissionNo) || linkedStudents[0];
+  const attStats = attendanceService.calculateStudentPercentage(verifiedChild?.id || '');
 
   // Examination evaluation for selected child
   const childMarks = examService.getMarksForStudent(selectedChild.id);

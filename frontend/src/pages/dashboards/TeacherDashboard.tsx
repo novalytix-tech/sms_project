@@ -38,6 +38,7 @@ import {
   CheckSquare,
   Users,
 } from 'lucide-react';
+import { todayISO } from '../../utils/date';
 
 export const TeacherDashboard: React.FC = () => {
   const navigate = useNavigate();
@@ -82,7 +83,7 @@ export const TeacherDashboard: React.FC = () => {
   const allClasses = classService.getAll();
   const classTeacherOf = allClasses.filter(c => c.classTeacherId === teacher.id);
   // Dynamic date and academic year
-  const todayDate = new Date().toISOString().split('T')[0];
+  const todayDate = todayISO();
   const academicYear = schoolSettings?.academicYear || '2025-2026';
 
   // Dynamic day of week and today's periods (Mon-Sat school week)

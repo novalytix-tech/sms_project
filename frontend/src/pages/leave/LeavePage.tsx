@@ -12,6 +12,7 @@ import { EmptyState } from '../../components/common/EmptyState';
 import { useERP } from '../../context/ERPContext';
 import { formatDate } from '../../utils/formatters';
 import { CheckSquare, Plus, CheckCircle, XCircle, RotateCcw } from 'lucide-react';
+import { todayISO } from '../../utils/date';
 
 export const LeavePage: React.FC = () => {
   const { currentRole, currentUser, selectedChild, parentChildren, addToast } = useERP();
@@ -25,8 +26,8 @@ export const LeavePage: React.FC = () => {
 
   const [applyForm, setApplyForm] = useState({
     leaveType: 'Medical' as LeaveType,
-    startDate: new Date().toISOString().split('T')[0],
-    endDate: new Date().toISOString().split('T')[0],
+    startDate: todayISO(),
+    endDate: todayISO(),
     totalDays: 1,
     reason: '',
   });
@@ -82,8 +83,8 @@ export const LeavePage: React.FC = () => {
     setIsApplyOpen(false);
     setApplyForm({
       leaveType: 'Casual',
-      startDate: new Date().toISOString().split('T')[0],
-      endDate: new Date().toISOString().split('T')[0],
+      startDate: todayISO(),
+      endDate: todayISO(),
       totalDays: 1,
       reason: '',
     });

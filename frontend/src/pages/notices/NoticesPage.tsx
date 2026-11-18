@@ -12,6 +12,7 @@ import { Badge } from '../../components/common/Badge';
 import { useERP } from '../../context/ERPContext';
 import { formatDate } from '../../utils/formatters';
 import { Plus, Trash2, CheckCircle, RotateCcw } from 'lucide-react';
+import { todayISO } from '../../utils/date';
 
 export const NoticesPage: React.FC = () => {
   const { currentRole, currentUser, addToast } = useERP();
@@ -44,7 +45,7 @@ export const NoticesPage: React.FC = () => {
       targetAudience: formData.targetAudience,
       authorName: currentUser.name,
       authorRole: currentRole.replace('_', ' ').toUpperCase(),
-      publishedDate: new Date().toISOString().split('T')[0],
+      publishedDate: todayISO(),
     });
 
     addToast('success', 'Notice Published', `"${formData.title}" posted to bulletin board.`);

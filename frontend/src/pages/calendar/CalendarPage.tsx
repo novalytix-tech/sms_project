@@ -12,6 +12,7 @@ import { Badge } from '../../components/common/Badge';
 import { useERP } from '../../context/ERPContext';
 import { formatDate } from '../../utils/formatters';
 import { Calendar as CalendarIcon, Plus, Edit, Trash2, MapPin, RotateCcw } from 'lucide-react';
+import { todayISO } from '../../utils/date';
 
 export const CalendarPage: React.FC = () => {
   const { currentRole, addToast } = useERP();
@@ -27,8 +28,8 @@ export const CalendarPage: React.FC = () => {
     title: '',
     description: '',
     category: 'academic' as EventCategory,
-    startDate: new Date().toISOString().split('T')[0],
-    endDate: new Date().toISOString().split('T')[0],
+    startDate: todayISO(),
+    endDate: todayISO(),
     targetAudience: 'all' as any,
     location: '',
   });
@@ -43,8 +44,8 @@ export const CalendarPage: React.FC = () => {
       title: '',
       description: '',
       category: 'academic',
-      startDate: new Date().toISOString().split('T')[0],
-      endDate: new Date().toISOString().split('T')[0],
+      startDate: todayISO(),
+      endDate: todayISO(),
       targetAudience: 'all',
       location: 'Main Auditorium',
     });

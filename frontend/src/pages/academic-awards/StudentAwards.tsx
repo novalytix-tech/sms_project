@@ -3,6 +3,7 @@ import { Trophy, Plus, Search, Eye, Edit2, Trash2, Send, FileCheck, Users, Check
 import { AcademicAward, AwardCategory, AwardAchievementLevel, AwardPosition, TeamMember } from '../../types/academicAwards';
 import { studentService } from '../../services/studentService';
 import { useERP } from '../../context/ERPContext';
+import { todayISO } from '../../utils/date';
 
 interface StudentAwardsProps {
   awards: AcademicAward[];
@@ -45,7 +46,7 @@ export const StudentAwards: React.FC<StudentAwardsProps> = ({
   const [position, setPosition] = useState<AwardPosition>('1st Place / Gold');
   const [competitionName, setCompetitionName] = useState('');
   const [organizer, setOrganizer] = useState('');
-  const [awardDate, setAwardDate] = useState(new Date().toISOString().split('T')[0]);
+  const [awardDate, setAwardDate] = useState(todayISO());
   const [academicYear, setAcademicYear] = useState('2026-2027');
   const [awardedBy, setAwardedBy] = useState('Principal & School Board');
   const [description, setDescription] = useState('');
@@ -88,7 +89,7 @@ export const StudentAwards: React.FC<StudentAwardsProps> = ({
     setPosition('1st Place / Gold');
     setCompetitionName('');
     setOrganizer('');
-    setAwardDate(new Date().toISOString().split('T')[0]);
+    setAwardDate(todayISO());
     setAcademicYear('2026-2027');
     setAwardedBy('Principal & School Board');
     setDescription('');

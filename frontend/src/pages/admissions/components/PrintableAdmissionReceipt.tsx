@@ -2,6 +2,7 @@ import React from 'react';
 import { AdmissionApplication } from '../../../types';
 import { formatDate, formatCurrencyINR } from '../../../utils/formatters';
 import { Printer, X } from 'lucide-react';
+import { todayISO } from '../../../utils/date';
 
 interface PrintableAdmissionReceiptProps {
   application: AdmissionApplication;
@@ -20,7 +21,7 @@ export const PrintableAdmissionReceipt: React.FC<PrintableAdmissionReceiptProps>
   amountPaid,
   paymentMethod = 'UPI / Net Banking',
   transactionRef = `TXN-ADM-${Date.now().toString().slice(-6)}`,
-  paymentDate = new Date().toISOString().split('T')[0],
+  paymentDate = todayISO(),
   schoolName = "St. Xavier's International Academy",
   onClose,
 }) => {

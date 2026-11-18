@@ -2,6 +2,7 @@ import React from 'react';
 import { AdmissionApplication, AdmissionOffer } from '../../../types';
 import { formatDate, formatCurrencyINR } from '../../../utils/formatters';
 import { Printer, X } from 'lucide-react';
+import { todayISO } from '../../../utils/date';
 
 interface PrintableOfferLetterProps {
   application: AdmissionApplication;
@@ -20,7 +21,7 @@ export const PrintableOfferLetter: React.FC<PrintableOfferLetterProps> = ({
     window.print();
   };
 
-  const offerDate = offer?.offerDate || application.updatedAt || new Date().toISOString().split('T')[0];
+  const offerDate = offer?.offerDate || application.updatedAt || todayISO();
   const expiryDate = offer?.expiryDate || '2026-11-15';
   const feeAmount = offer?.admissionFeeAmount || application.admissionFeeAmount || 25000;
   const targetClass = offer?.approvedClassName || application.targetClassName;

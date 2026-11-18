@@ -4,6 +4,7 @@ import { AdmissionEnquiry, EnquirySource, PreferredContactMethod } from '../../.
 import { admissionService } from '../../../services/admissionService';
 import { classService } from '../../../services/classService';
 import { AlertCircle, UserCheck } from 'lucide-react';
+import { todayISO } from '../../../utils/date';
 
 interface NewEnquiryModalProps {
   isOpen: boolean;
@@ -77,7 +78,7 @@ export const NewEnquiryModal: React.FC<NewEnquiryModalProps> = ({
 
     const res = admissionService.createEnquiry({
       ...form,
-      enquiryDate: new Date().toISOString().split('T')[0],
+      enquiryDate: todayISO(),
       interestedClassName: targetClassName,
       status: 'New',
     });

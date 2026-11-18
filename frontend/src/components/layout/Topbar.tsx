@@ -36,6 +36,7 @@ import {
 } from 'lucide-react';
 import { libraryService } from '../../services/libraryService';
 import { getTeacherLibraryAssignment } from '../../utils/permissions';
+import { todayISO } from '../../utils/date';
 
 interface TopbarProps {
   onOpenMobileSidebar: () => void;
@@ -103,7 +104,7 @@ export const Topbar: React.FC<TopbarProps> = ({ onOpenMobileSidebar }) => {
   const currentYear = today.getFullYear();
   const formattedCurrentDate = `${currentDay} ${currentMonth} ${currentYear}`;
   const [newReminderTitle, setNewReminderTitle] = useState('');
-  const [newReminderDate, setNewReminderDate] = useState(() => new Date().toISOString().split('T')[0]);
+  const [newReminderDate, setNewReminderDate] = useState(() => todayISO());
 
   // Weather State (Kanpur default)
   const [weatherData] = useState<{

@@ -5,6 +5,7 @@
 
 import { GradingScheme, GradeRule, ExamType, ExamMark, ExamSchedule } from '../types';
 import { ERPStorage } from './storage';
+import { todayISO } from '../utils/date';
 
 export const GRADING_SCHEME_TEMPLATES: Array<Omit<GradingScheme, 'id' | 'createdAt' | 'updatedAt'>> = [
   {
@@ -110,8 +111,8 @@ export const gradingService = {
     return {
       id: 'scheme-default-fallback',
       ...GRADING_SCHEME_TEMPLATES[0],
-      createdAt: new Date().toISOString().split('T')[0],
-      updatedAt: new Date().toISOString().split('T')[0],
+      createdAt: todayISO(),
+      updatedAt: todayISO(),
     };
   },
 
@@ -242,7 +243,7 @@ export const gradingService = {
       return { success: false, error: val.error };
     }
 
-    const now = new Date().toISOString().split('T')[0];
+    const now = todayISO();
 
     // If marked default, unset default on other schemes
     if (scheme.isDefault) {

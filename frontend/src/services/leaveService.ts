@@ -5,6 +5,7 @@
 
 import { LeaveRequest, LeaveStatus } from '../types';
 import { ERPStorage } from './storage';
+import { todayISO } from '../utils/date';
 
 export const leaveService = {
   getAll: (): LeaveRequest[] => {
@@ -21,7 +22,7 @@ export const leaveService = {
       ...data,
       id: `lvr-${Date.now()}`,
       status: 'pending',
-      appliedOn: new Date().toISOString().split('T')[0],
+      appliedOn: todayISO(),
     };
     store.leaveRequests = [newRequest, ...store.leaveRequests];
     ERPStorage.set(store);

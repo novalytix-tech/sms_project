@@ -21,6 +21,7 @@ import { EmptyState } from '../../components/common/EmptyState';
 import { useERP } from '../../context/ERPContext';
 import { formatDate } from '../../utils/formatters';
 import { Award, Plus, Edit, Trash2, Calendar, CheckCircle, Printer, GraduationCap, Sliders } from 'lucide-react';
+import { todayISO } from '../../utils/date';
 
 export const ExaminationsPage: React.FC = () => {
   const { currentRole, currentUser, selectedChild, parentChildren, schoolSettings, addToast } = useERP();
@@ -111,7 +112,7 @@ export const ExaminationsPage: React.FC = () => {
   const [scheduleModalTarget, setScheduleModalTarget] = useState<Examination | null>(null);
   const [newScheduleData, setNewScheduleData] = useState({
     subject: 'Mathematics',
-    date: new Date().toISOString().split('T')[0],
+    date: todayISO(),
     startTime: '09:00',
     endTime: '12:00',
     maxMarks: 80,
@@ -148,7 +149,7 @@ export const ExaminationsPage: React.FC = () => {
     classId: classes[0]?.id || 'cls-10a',
     section: 'A',
     academicYear: '2026-2027',
-    startDate: new Date().toISOString().split('T')[0],
+    startDate: todayISO(),
     endDate: new Date(Date.now() + 10 * 86400000).toISOString().split('T')[0],
     status: 'upcoming' as 'upcoming' | 'ongoing' | 'completed',
   });
@@ -271,7 +272,7 @@ export const ExaminationsPage: React.FC = () => {
       classId: classes[0]?.id || 'cls-10a',
       section: 'A',
       academicYear: schoolSettings.academicYear,
-      startDate: new Date().toISOString().split('T')[0],
+      startDate: todayISO(),
       endDate: new Date(Date.now() + 10 * 86400000).toISOString().split('T')[0],
       status: 'upcoming',
     });

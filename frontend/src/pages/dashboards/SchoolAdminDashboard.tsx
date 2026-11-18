@@ -30,6 +30,7 @@ import {
   BookOpen,
   BarChart3,
 } from 'lucide-react';
+import { todayISO } from '../../utils/date';
 
 export const SchoolAdminDashboard: React.FC = () => {
   const navigate = useNavigate();
@@ -47,7 +48,7 @@ export const SchoolAdminDashboard: React.FC = () => {
   const totalTeachers = teachers.length;
 
   // Today's campus-wide attendance rate from actual records
-  const todayDate = new Date().toISOString().split('T')[0];
+  const todayDate = todayISO();
   const todayAtt = attendanceService.calculateOverallTodayPercentage(todayDate);
 
   // Quick-action shortcuts (reference layout)

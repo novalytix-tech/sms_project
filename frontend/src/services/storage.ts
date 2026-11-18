@@ -36,6 +36,14 @@ export class ERPStorage {
         return INITIAL_ERP_DATA;
       }
 
+      // Backfill any top-level collection missing from an older or partial store,
+      // so a stale browser store can never crash the app.
+      (Object.keys(INITIAL_ERP_DATA) as (keyof ERPDataStore)[]).forEach(k => {
+        if ((parsed as any)[k] === undefined) {
+          (parsed as any)[k] = JSON.parse(JSON.stringify((INITIAL_ERP_DATA as any)[k] ?? null));
+        }
+      });
+
       // Re-seed ONLY when the data version changes — never based on record count,
       // so real imported data (even < 30 students) is never wiped on reload.
       if (!parsed.students || parsed.version !== INITIAL_ERP_DATA.version) {

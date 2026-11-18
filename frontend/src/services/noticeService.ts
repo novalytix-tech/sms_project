@@ -5,6 +5,7 @@
 
 import { Notice } from '../types';
 import { ERPStorage } from './storage';
+import { todayISO } from '../utils/date';
 
 export const noticeService = {
   getAll: (): Notice[] => {
@@ -22,7 +23,7 @@ export const noticeService = {
     const newNotice: Notice = {
       ...data,
       id: `not-${Date.now()}`,
-      publishedDate: data.publishedDate || new Date().toISOString().split('T')[0],
+      publishedDate: data.publishedDate || todayISO(),
       isRead: false,
     };
     store.notices = [newNotice, ...store.notices];

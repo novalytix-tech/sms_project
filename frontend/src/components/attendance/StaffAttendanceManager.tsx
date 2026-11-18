@@ -17,6 +17,7 @@ import { SearchInput } from '../common/SearchInput';
 import { formatDate } from '../../utils/formatters';
 import { exportToCSV } from '../../utils/export';
 import { CalendarCheck, CheckCircle, Clock, AlertCircle, Save, Download, Calendar, Search, Edit, History, UserCheck, AlertTriangle, Users } from 'lucide-react';
+import { todayISO, daysAgoISO } from '../../utils/date';
 
 export const StaffAttendanceManager: React.FC = () => {
   const { currentRole, currentUser, addToast } = useERP();
@@ -33,7 +34,7 @@ export const StaffAttendanceManager: React.FC = () => {
   );
 
   // Selected date for Roster
-  const [selectedDate, setSelectedDate] = useState<string>(new Date().toISOString().split('T')[0]);
+  const [selectedDate, setSelectedDate] = useState<string>(todayISO());
   const [deptFilter, setDeptFilter] = useState<string>('all');
   const [searchRoster, setSearchRoster] = useState<string>('');
 
@@ -82,6 +83,15 @@ export const StaffAttendanceManager: React.FC = () => {
     const handleUpdate = () => setRefreshTrigger(v => v + 1);
     window.addEventListener('nts_erp_storage_updated', handleUpdate);
     return () => window.removeEventListener('nts_erp_storage_updated', handleUpdate);
+  }, []);
+
+  // Load staff attendance from the server: the chosen day, plus recent history once.
+  useEffect(() => {
+    staffAttendanceService.load({ date: selectedDate });
+  }, [selectedDate]);
+  useEffect(() => {
+    const from = daysAgoISO(90);
+    staffAttendanceService.load({ from });
   }, []);
 
   // Summary statistics for the chosen date
@@ -265,7 +275,8 @@ export const StaffAttendanceManager: React.FC = () => {
   };
 
   // Commit daily roster to storage
-  const handleSaveRoster = () => {
+  const handleSaveRoster = async () => {
+    if (isSaving) return;
     setIsSaving(true);
     const recordsToSave = filteredRosterTeachers.map(t => {
       const entry = rosterMap[t.id] || { status: 'present', checkInTime: '08:15', remarks: '', allowOverride: false };
@@ -279,7 +290,7 @@ export const StaffAttendanceManager: React.FC = () => {
       };
     });
 
-    const res = staffAttendanceService.saveDailyStaffRoster(recordsToSave);
+    const res = await staffAttendanceService.saveDailyStaffRoster(recordsToSave);
     setIsSaving(false);
 
     if (res.success) {
@@ -304,19 +315,18 @@ export const StaffAttendanceManager: React.FC = () => {
     setCorrectionError('');
   };
 
-  const handleSaveCorrection = () => {
+  const handleSaveCorrection = async () => {
     if (!correctionTarget) return;
     if (!correctionForm.reason || correctionForm.reason.trim().length < 5) {
       setCorrectionError('Please enter an official audit reason for this correction (at least 5 characters).');
       return;
     }
 
-    const res = staffAttendanceService.correctAttendance(
+    const res = await staffAttendanceService.correctAttendance(
       correctionTarget.id,
       correctionForm.newStatus,
       correctionForm.reason,
-      correctionForm.remarks,
-      currentUser.name || 'School Admin'
+      correctionForm.remarks
     );
 
     if (res.success) {

@@ -3,6 +3,7 @@ import { Modal } from '../../../components/common/Modal';
 import { AdmissionApplication } from '../../../types';
 import { admissionService } from '../../../services/admissionService';
 import { classService } from '../../../services/classService';
+import { todayISO } from '../../../utils/date';
 
 interface GenerateOfferModalProps {
   isOpen: boolean;
@@ -42,11 +43,11 @@ export const GenerateOfferModal: React.FC<GenerateOfferModalProps> = ({
     const res = admissionService.generateOffer({
       applicationId: application.id,
       decision,
-      decisionDate: new Date().toISOString().split('T')[0],
+      decisionDate: todayISO(),
       approvedClassId: classId,
       approvedClassName,
       offeredSection: section,
-      offerDate: new Date().toISOString().split('T')[0],
+      offerDate: todayISO(),
       expiryDate,
       admissionFeeAmount: Number(feeAmount),
       admissionInstructions: instructions,

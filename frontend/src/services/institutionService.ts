@@ -6,6 +6,7 @@
 import { Institution } from '../types';
 import { SchoolServiceConfiguration, ServiceIdentifier } from '../types/serviceEntitlement';
 import { ERPStorage } from './storage';
+import { todayISO } from '../utils/date';
 
 export const institutionService = {
   getAll: (): Institution[] => {
@@ -27,7 +28,7 @@ export const institutionService = {
     const newInst: Institution = {
       ...data,
       id: `inst-${Date.now()}`,
-      createdAt: new Date().toISOString().split('T')[0],
+      createdAt: todayISO(),
       status: data.status || 'active',
       studentCount: Number(data.studentCount) || 0,
       teacherCount: Number(data.teacherCount) || 0,

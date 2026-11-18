@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Modal } from '../../../components/common/Modal';
 import { AdmissionEnquiry, AdmissionFollowUp, CallOutcome } from '../../../types';
 import { admissionService } from '../../../services/admissionService';
+import { todayISO } from '../../../utils/date';
 
 interface AddFollowUpModalProps {
   isOpen: boolean;
@@ -17,7 +18,7 @@ export const AddFollowUpModal: React.FC<AddFollowUpModalProps> = ({
   onSuccess,
 }) => {
   const [method, setMethod] = useState<'Phone Call' | 'WhatsApp' | 'Email' | 'Campus Visit'>('Phone Call');
-  const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
+  const [date, setDate] = useState(todayISO());
   const [time, setTime] = useState('11:00');
   const [outcome, setOutcome] = useState<CallOutcome>('Interested');
   const [notes, setNotes] = useState('');

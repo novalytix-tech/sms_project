@@ -1915,25 +1915,7 @@ export const INITIAL_ERP_DATA: ERPDataStore = {
   ],
 
 
-  attendance: [
-    // Today's attendance for Class 10-A
-    { id: 'att-1', classId: 'cls-10a', section: 'A', date: '2026-10-21', studentId: 'stud-1', status: 'present' },
-    { id: 'att-2', classId: 'cls-10a', section: 'A', date: '2026-10-21', studentId: 'stud-3', status: 'present' },
-    { id: 'att-3', classId: 'cls-10a', section: 'A', date: '2026-10-21', studentId: 'stud-4', status: 'present' },
-    // Yesterday
-    { id: 'att-4', classId: 'cls-10a', section: 'A', date: '2026-10-20', studentId: 'stud-1', status: 'present' },
-    { id: 'att-5', classId: 'cls-10a', section: 'A', date: '2026-10-20', studentId: 'stud-3', status: 'late', remarks: 'Traffic delay 15 mins' },
-    { id: 'att-6', classId: 'cls-10a', section: 'A', date: '2026-10-20', studentId: 'stud-4', status: 'present' },
-    // Day before
-    { id: 'att-7', classId: 'cls-10a', section: 'A', date: '2026-10-19', studentId: 'stud-1', status: 'present' },
-    { id: 'att-8', classId: 'cls-10a', section: 'A', date: '2026-10-19', studentId: 'stud-3', status: 'present' },
-    { id: 'att-9', classId: 'cls-10a', section: 'A', date: '2026-10-19', studentId: 'stud-4', status: 'excused', remarks: 'Medical appointment' },
-    // Diya Patel (Class 8-A)
-    { id: 'att-10', classId: 'cls-8a', section: 'A', date: '2026-10-21', studentId: 'stud-2', status: 'present' },
-    { id: 'att-11', classId: 'cls-8a', section: 'A', date: '2026-10-20', studentId: 'stud-2', status: 'present' },
-    { id: 'att-12', classId: 'cls-8a', section: 'A', date: '2026-10-19', studentId: 'stud-2', status: 'present' },
-  ],
-
+  attendance: [], // served by the backend attendance API
   assignments: [
     {
       id: 'asg-1',
@@ -3087,104 +3069,7 @@ export const INITIAL_ERP_DATA: ERPDataStore = {
 
 
 
-  staffAttendance: [
-    {
-      id: 'stf-att-1',
-      teacherId: 'teach-1',
-      staffId: 'STAFF-101',
-      staffName: 'Mrs. Ananya Sharma',
-      department: 'Mathematics',
-      date: '2026-10-21',
-      status: 'present',
-      checkInTime: '08:15',
-      checkOutTime: '15:30',
-      remarks: 'Conducted all 4 scheduled periods',
-    },
-    {
-      id: 'stf-att-2',
-      teacherId: 'teach-2',
-      staffId: 'STAFF-102',
-      staffName: 'Mr. Rajesh Kumar',
-      department: 'Science',
-      date: '2026-10-21',
-      status: 'present',
-      checkInTime: '08:20',
-      checkOutTime: '15:30',
-      remarks: 'Lab safety demonstration conducted',
-    },
-    {
-      id: 'stf-att-3',
-      teacherId: 'teach-3',
-      staffId: 'STAFF-103',
-      staffName: 'Ms. Priya Nair',
-      department: 'English',
-      date: '2026-10-21',
-      status: 'late',
-      checkInTime: '08:45',
-      checkOutTime: '15:30',
-      remarks: 'Delayed due to traffic detour',
-    },
-    {
-      id: 'stf-att-4',
-      teacherId: 'teach-4',
-      staffId: 'STAFF-104',
-      staffName: 'Dr. Ramesh Patil',
-      department: 'Science',
-      date: '2026-10-21',
-      status: 'present',
-      checkInTime: '08:05',
-      checkOutTime: '15:30',
-      remarks: 'Senior physics lab oversight',
-    },
-    {
-      id: 'stf-att-5',
-      teacherId: 'teach-5',
-      staffId: 'STAFF-105',
-      staffName: 'Mrs. Sunita Verma',
-      department: 'Social Science',
-      date: '2026-10-21',
-      status: 'half_day',
-      checkInTime: '08:15',
-      checkOutTime: '12:30',
-      remarks: 'Left after lunch for medical visit',
-    },
-    {
-      id: 'stf-att-6',
-      teacherId: 'teach-6',
-      staffId: 'STAFF-106',
-      staffName: 'Mr. Amit Sen',
-      department: 'Commerce',
-      date: '2026-10-21',
-      status: 'present',
-      checkInTime: '08:10',
-      checkOutTime: '15:30',
-      remarks: 'Accountancy revision lectures',
-    },
-    {
-      id: 'stf-att-7',
-      teacherId: 'teach-1',
-      staffId: 'STAFF-101',
-      staffName: 'Mrs. Ananya Sharma',
-      department: 'Mathematics',
-      date: '2026-10-22',
-      status: 'present',
-      checkInTime: '08:12',
-      checkOutTime: '15:30',
-      remarks: 'Regular morning assembly duty',
-    },
-    {
-      id: 'stf-att-8',
-      teacherId: 'teach-3',
-      staffId: 'STAFF-103',
-      staffName: 'Ms. Priya Nair',
-      department: 'English',
-      date: '2026-10-22',
-      status: 'on_leave',
-      leaveRequestId: 'lvr-4',
-      remarks: 'On sanctioned medical leave (lvr-4)',
-    },
-  ],
-
+  staffAttendance: [],
   admissions: [
     {
       id: 'adm-app-1',

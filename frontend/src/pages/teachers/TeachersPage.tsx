@@ -20,6 +20,7 @@ import { exportToCSV } from '../../utils/export';
 import { EntityToolbox, ToolboxColumn } from '../../components/common/EntityToolbox';
 import { pickField } from '../../utils/csv';
 import { Download, Eye, Edit, Trash2, RotateCcw } from 'lucide-react';
+import { todayISO } from '../../utils/date';
 
 export const TeachersPage: React.FC = () => {
   const { currentRole, addToast } = useERP();
@@ -58,7 +59,7 @@ export const TeachersPage: React.FC = () => {
     department: 'Mathematics',
     specialization: '',
     qualification: 'M.Sc., B.Ed.',
-    joiningDate: new Date().toISOString().split('T')[0],
+    joiningDate: todayISO(),
     status: 'active' as 'active' | 'inactive',
     photoUrl: '',
   });
@@ -82,7 +83,7 @@ export const TeachersPage: React.FC = () => {
       department: 'Mathematics',
       specialization: '',
       qualification: 'M.Sc., B.Ed.',
-      joiningDate: new Date().toISOString().split('T')[0],
+      joiningDate: todayISO(),
       status: 'active',
       photoUrl: '',
     });
@@ -294,7 +295,7 @@ export const TeachersPage: React.FC = () => {
         department: pickField(r, 'Department') || 'General',
         specialization: pickField(r, 'Specialization'),
         qualification: pickField(r, 'Qualification'),
-        joiningDate: pickField(r, 'Joining Date') || new Date().toISOString().split('T')[0],
+        joiningDate: pickField(r, 'Joining Date') || todayISO(),
         status: ((pickField(r, 'Status') as Teacher['status']) || 'active'),
         assignedClasses: [],
         avatar: `${firstName.charAt(0)}${lastName.charAt(0)}`.toUpperCase(),

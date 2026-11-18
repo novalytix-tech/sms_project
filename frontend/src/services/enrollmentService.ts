@@ -8,6 +8,7 @@ import { ERPStorage } from './storage';
 import { studentService } from './studentService';
 import { classService } from './classService';
 import { academicSessionService } from './academicSessionService';
+import { todayISO } from '../utils/date';
 
 export interface EnrollStudentInput {
   studentId: string;
@@ -298,7 +299,7 @@ export const enrollmentService = {
       className: cls.name,
       section,
       rollNo,
-      enrollmentDate: new Date().toISOString().split('T')[0],
+      enrollmentDate: todayISO(),
       status: 'active',
       remarks: params.remarks,
       updatedAt: new Date().toISOString(),
@@ -368,7 +369,7 @@ export const enrollmentService = {
           section: sectionArg || cls?.section || 'A',
           rollNo: raw.rollNo || '1',
           academicYear: '',
-          admissionDate: new Date().toISOString().split('T')[0],
+          admissionDate: todayISO(),
           parentName: raw.guardianName || raw.parentName || 'Parent Guardian',
           parentPhone: raw.guardianPhone || raw.parentPhone || '+91 99999 99999',
           parentEmail: raw.guardianEmail || raw.parentEmail || '',
@@ -502,7 +503,7 @@ export const enrollmentService = {
       className: cls.name,
       section,
       rollNo,
-      enrollmentDate: params.student.admissionDate || new Date().toISOString().split('T')[0],
+      enrollmentDate: params.student.admissionDate || todayISO(),
       status: 'active',
       updatedAt: new Date().toISOString(),
     };
@@ -622,7 +623,7 @@ export const enrollmentService = {
     const currentEnrollment = enrollments[index];
     const reasonText = typeof operatorOrReason === 'string' ? operatorOrReason : reasonOrSessionId;
     currentEnrollment.status = 'withdrawn';
-    currentEnrollment.remarks = `Withdrawn on ${new Date().toISOString().split('T')[0]}: ${(reasonText || 'Administrative withdrawal').trim()}`;
+    currentEnrollment.remarks = `Withdrawn on ${todayISO()}: ${(reasonText || 'Administrative withdrawal').trim()}`;
     currentEnrollment.updatedAt = new Date().toISOString();
 
     const student = store.students.find(s => s.id === currentEnrollment.studentId);
