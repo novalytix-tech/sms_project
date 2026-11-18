@@ -1,0 +1,413 @@
+/* =========================================================
+   Student Admissions & Enrollment Management CSS
+   Design System: Crimson & Warm-White School ERP Palette
+   Developed by NTS Novalytix
+   ========================================================= */
+
+.admissions-container {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5, 20px);
+  width: 100%;
+}
+
+/* Tab Navigation Header */
+.admissions-tabs-nav {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: #ffffff;
+  border: 1px solid var(--color-border, #E2E8F0);
+  border-radius: var(--radius-md, 12px);
+  padding: 6px;
+  overflow-x: auto;
+  scrollbar-width: thin;
+}
+
+.admissions-tab-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 16px;
+  border-radius: var(--radius-sm, 8px);
+  font-size: 13.5px;
+  font-weight: 500;
+  color: var(--color-text-secondary, #71717a);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.18s ease;
+}
+
+.admissions-tab-btn:hover {
+  color: var(--color-primary, #3B82F6);
+  background: var(--color-primary-soft, #DBEAFE);
+}
+
+.admissions-tab-btn.active {
+  color: #ffffff;
+  background: var(--color-primary, #3B82F6);
+  box-shadow: 0 2px 8px rgba(59, 130, 246, 0.25);
+  font-weight: 600;
+}
+
+.admissions-tab-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 1px 7px;
+  border-radius: 10px;
+  background: rgba(0, 0, 0, 0.08);
+  color: inherit;
+}
+
+.admissions-tab-btn.active .admissions-tab-badge {
+  background: rgba(255, 255, 255, 0.25);
+  color: #ffffff;
+}
+
+/* KPI Summary Cards Grid */
+.adm-kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+  gap: var(--space-4, 16px);
+}
+
+.adm-kpi-card {
+  background: #ffffff;
+  border: 1px solid var(--color-border, #E2E8F0);
+  border-radius: var(--radius-md, 12px);
+  padding: 16px;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  box-shadow: 0 1px 3px rgba(59, 130, 246, 0.04);
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.adm-kpi-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.08);
+  border-color: var(--color-primary-border, #BFDBFE);
+}
+
+.adm-kpi-label {
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--color-text-secondary, #71717a);
+  margin-bottom: 6px;
+}
+
+.adm-kpi-val {
+  font-size: 24px;
+  font-weight: 700;
+  color: var(--color-text-main, #19191f);
+  line-height: 1.2;
+}
+
+.adm-kpi-sub {
+  font-size: 11.5px;
+  color: var(--color-text-muted, #958483);
+  margin-top: 4px;
+}
+
+.adm-kpi-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+/* Visualizations Grid */
+.adm-vis-grid {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: var(--space-5, 20px);
+}
+
+@media (max-width: 1024px) {
+  .adm-vis-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.adm-card {
+  background: #ffffff;
+  border: 1px solid var(--color-border, #E2E8F0);
+  border-radius: var(--radius-md, 12px);
+  box-shadow: 0 1px 3px rgba(59, 130, 246, 0.04);
+  overflow: hidden;
+}
+
+.adm-card-header {
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--color-border-subtle, #f8ece9);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: #F6F8FC;
+}
+
+.adm-card-title {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--color-text-main, #19191f);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.adm-card-body {
+  padding: 20px;
+}
+
+/* Funnel Visualization */
+.adm-funnel-container {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.adm-funnel-step {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.adm-funnel-step-label {
+  width: 130px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--color-text-main, #19191f);
+  flex-shrink: 0;
+}
+
+.adm-funnel-bar-track {
+  flex: 1;
+  height: 24px;
+  background: #f8f1f0;
+  border-radius: 6px;
+  overflow: hidden;
+  position: relative;
+}
+
+.adm-funnel-bar-fill {
+  height: 100%;
+  border-radius: 6px;
+  background: linear-gradient(90deg, var(--color-primary, #3B82F6), #60A5FA);
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  padding-right: 8px;
+  color: #ffffff;
+  font-size: 11.5px;
+  font-weight: 600;
+  transition: width 0.4s ease;
+}
+
+.adm-funnel-step-count {
+  width: 70px;
+  text-align: right;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--color-text-main, #19191f);
+  flex-shrink: 0;
+}
+
+/* Status Badges */
+.badge-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 9px;
+  border-radius: 12px;
+  font-size: 11.5px;
+  font-weight: 600;
+  line-height: 1.3;
+}
+
+.badge-status.new {
+  background: #eff6ff;
+  color: #1d4ed8;
+  border: 1px solid #bfdbfe;
+}
+
+.badge-status.contacted {
+  background: #f0fdf4;
+  color: #15803d;
+  border: 1px solid #bbf7d0;
+}
+
+.badge-status.followup {
+  background: #fff7ed;
+  color: #c2410c;
+  border: 1px solid #fed7aa;
+}
+
+.badge-status.visit {
+  background: #faf5ff;
+  color: #7e22ce;
+  border: 1px solid #e9d5ff;
+}
+
+.badge-status.converted {
+  background: #ecfdf5;
+  color: #047857;
+  border: 1px solid #a7f3d0;
+}
+
+.badge-status.lost {
+  background: #fef2f2;
+  color: #b91c1c;
+  border: 1px solid #fecaca;
+}
+
+.badge-status.pending {
+  background: #fefce8;
+  color: #a16207;
+  border: 1px solid #fef08a;
+}
+
+.badge-status.verified {
+  background: #ecfdf5;
+  color: #065f46;
+  border: 1px solid #6ee7b7;
+}
+
+.badge-status.rejected {
+  background: #fff1f2;
+  color: #be123c;
+  border: 1px solid #fecdd3;
+}
+
+/* Capacity Indicator Bar */
+.adm-capacity-bar {
+  width: 100%;
+  height: 8px;
+  background: #f1e6e4;
+  border-radius: 4px;
+  overflow: hidden;
+  margin-top: 4px;
+}
+
+.adm-capacity-fill {
+  height: 100%;
+  border-radius: 4px;
+  transition: width 0.3s ease;
+}
+
+.adm-capacity-fill.green {
+  background: #16a34a;
+}
+
+.adm-capacity-fill.orange {
+  background: #f59e0b;
+}
+
+.adm-capacity-fill.red {
+  background: #dc2626;
+}
+
+/* Detailed Applicant Profile Layout */
+.adm-profile-container {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  max-height: 75vh;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+
+.adm-profile-header {
+  background: #F6F8FC;
+  border: 1px solid var(--color-border, #E2E8F0);
+  border-radius: 12px;
+  padding: 18px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 14px;
+}
+
+.adm-profile-info {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.adm-profile-avatar {
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  background: var(--color-primary, #3B82F6);
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+  font-weight: 700;
+}
+
+.adm-profile-nav {
+  display: flex;
+  gap: 6px;
+  border-bottom: 1px solid var(--color-border, #E2E8F0);
+  padding-bottom: 2px;
+  overflow-x: auto;
+}
+
+.adm-profile-tab {
+  padding: 8px 14px;
+  font-size: 13px;
+  font-weight: 500;
+  border: none;
+  background: transparent;
+  color: var(--color-text-secondary, #71717a);
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  transition: all 0.15s ease;
+  white-space: nowrap;
+}
+
+.adm-profile-tab:hover {
+  color: var(--color-primary, #3B82F6);
+}
+
+.adm-profile-tab.active {
+  color: var(--color-primary, #3B82F6);
+  border-bottom-color: var(--color-primary, #3B82F6);
+  font-weight: 600;
+}
+
+/* Print Styles */
+@media print {
+  body * {
+    visibility: hidden;
+  }
+  .printable-document, .printable-document * {
+    visibility: visible;
+  }
+  .printable-document {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    margin: 0;
+    padding: 20mm;
+    background: #ffffff;
+    color: #000000;
+  }
+  .no-print {
+    display: none !important;
+  }
+}
+

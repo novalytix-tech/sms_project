@@ -1,0 +1,105 @@
+%% ========================================================
+%% SCHOOL ERP — ATTENDANCE & LEAVE WORKFLOW
+%% File: docs/architecture/attendance-workflow.mmd
+%% Generated for: D:\SMS (Read-Only Architectural Audit)
+%% ========================================================
+
+flowchart TD
+    classDef actionNode fill:#f0fdf4,stroke:#16a34a,stroke-width:2px,color:#14532d;
+    classDef decisionNode fill:#fffbeb,stroke:#d97706,stroke-width:2px,color:#78350f;
+    classDef blockedNode fill:#fef2f2,stroke:#ef4444,stroke-width:1px,color:#991b1b;
+    classDef storageNode fill:#faf5ff,stroke:#9333ea,stroke-width:2px,color:#581c87;
+    classDef clientView fill:#eff6ff,stroke:#2563eb,stroke-width:1px,color:#1e3a8a;
+
+    subgraph User_Entry ["1. User Access & Permission Resolution"]
+        User["User accesses /attendance"]
+        RoleCheck{"User Role & Capabilities?"}:::decisionNode
+        
+        AdminView["School Admin / Super Admin:
+        Full Access to Class Attendance & Staff Roster"]:::actionNode
+        TeacherView["Teacher:
+        Assigned Classes Attendance + Own Staff Attendance View"]:::actionNode
+        ReadOnlyView["Student & Parent:
+        Read-Only View of Personal / Ward Attendance"]:::clientView
+        BlockedUser["Supplier:
+        Access Restricted (Redirected to /)"]:::blockedNode
+
+        User --> RoleCheck
+        RoleCheck -->|school_admin / super_admin| AdminView
+        RoleCheck -->|teacher| TeacherView
+        RoleCheck -->|student / parent| ReadOnlyView
+        RoleCheck -->|supplier| BlockedUser
+    end
+
+    subgraph Student_Attendance_Pipeline ["2. Daily Student Class Attendance Marking"]
+        SelectClass["Select Class & Section (e.g. Class 10-A, Date: 2026-10-22)"]
+        FetchRoster["Fetch Enrolled Students for Class
+        * studentService.getByClass(classId)
+        * enrollmentService.getEnrollmentsByClass"]
+        CheckExisting{"Existing Attendance for Date?"}:::decisionNode
+
+        SelectClass --> FetchRoster --> CheckExisting
+        CheckExisting -->|Records Found| LoadExisting["Pre-populate Statuses & Remarks"]
+        CheckExisting -->|Not Marked| InitDefault["Initialize all as 'Present' (Quick-Mark Default)"]
+
+        LoadExisting & InitDefault --> MarkEntry["Teacher adjusts individual student statuses:
+        * 'present' | 'absent' | 'late' | 'excused'"]
+
+        CheckStudentLeave{"Student on Approved Leave on Date?"}:::decisionNode
+        MarkEntry --> CheckStudentLeave
+
+        CheckStudentLeave -->|Yes & Marked Present| LeaveOverridePrompt["Prompt: Student has approved leave!
+        Require explicit confirmation to mark Present"]:::decisionNode
+        CheckStudentLeave -->|No or Acknowledged| ValidateSubmit["Save Attendance Action Triggered"]
+        LeaveOverridePrompt --> ValidateSubmit
+
+        SaveClassAttendance["attendanceService.saveClassAttendance()
+        * In-place update (prevents duplicate daily records)
+        * Recomputes student cumulative attendance %"]:::actionNode
+
+        ValidateSubmit --> SaveClassAttendance
+    end
+
+    subgraph Staff_Attendance_Pipeline ["3. Staff Daily Attendance Roster & Audits"]
+        OpenStaffRoster["Admin opens Staff Attendance Manager"]
+        FetchStaff["Fetch All Active Teachers & Staff
+        * teacherService.getAll()"]
+        CheckStaffLeave{"Teacher on Approved Leave (Priya Nair)?"}:::decisionNode
+
+        OpenStaffRoster --> FetchStaff --> CheckStaffLeave
+        CheckStaffLeave -->|Approved Leave Found| BlockStaffPresent["Marking Present blocked without override
+        (Integrity Protection)"]:::blockedNode
+        CheckStaffLeave -->|Normal Working Day| MarkStaff["Mark: 'present' | 'absent' | 'half_day' | 'on_duty'"]
+
+        OverrideStaff["Explicit Admin Override with Reason"]:::actionNode
+        BlockStaffPresent --> OverrideStaff --> SaveStaffRoster
+        MarkStaff --> SaveStaffRoster
+
+        SaveStaffRoster["staffAttendanceService.saveRoster()
+        * Saves daily roster in ERPStorage.staffAttendance"]:::actionNode
+
+        AuditCorrection["Audit Correction Triggered
+        * staffAttendanceService.correctRecord()
+        * Mandatory Justification Note Required
+        * Preserves: previousStatus, correctedBy, timestamp, reason"]:::actionNode
+
+        SaveStaffRoster --> AuditCorrection
+    end
+
+    subgraph Storage_And_Reactive_Sync ["4. Storage & Metrics Distribution"]
+        Storage[("ERPStorage.set()
+        * Updates LocalStorage
+        * Dispatches 'nts_erp_storage_updated'")]:::storageNode
+
+        SaveClassAttendance --> Storage
+        AuditCorrection --> Storage
+
+        DashboardSync["Live Dashboard Stat Recomputation:
+        * Attendance % across school / class
+        * Shortage Warning if Attendance < 75%
+        * Working days vs contracted days breakdown"]:::clientView
+
+        Storage --> DashboardSync
+        Storage --> ReadOnlyView
+    end
+

@@ -1,0 +1,62 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 280" width="240" height="280">
+  <defs>
+    <linearGradient id="parentBg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#fff8f7"/>
+      <stop offset="100%" stop-color="#fedfd8"/>
+    </linearGradient>
+    <linearGradient id="parentJacket" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#475569"/>
+      <stop offset="100%" stop-color="#1e293b"/>
+    </linearGradient>
+    <linearGradient id="parentSkin" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#f5caa6"/>
+      <stop offset="100%" stop-color="#deb095"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Background Card -->
+  <rect width="240" height="280" rx="20" fill="url(#parentBg)" />
+  <circle cx="120" cy="115" r="75" fill="#fde2db" opacity="0.8"/>
+
+  <!-- Neck & Base -->
+  <path d="M106 140 L134 140 L138 178 L102 178 Z" fill="#deb095" />
+
+  <!-- Collared Polo / Shirt -->
+  <polygon points="92,165 120,195 106,170" fill="#ffffff" stroke="#e2e8f0" stroke-width="1.5"/>
+  <polygon points="148,165 120,195 134,170" fill="#ffffff" stroke="#e2e8f0" stroke-width="1.5"/>
+
+  <!-- Casual Smart Jacket -->
+  <path d="M40 280 L40 228 C40 198 65 178 88 170 L106 215 L106 280 Z" fill="url(#parentJacket)" />
+  <path d="M200 280 L200 228 C200 198 175 178 152 170 L134 215 L134 280 Z" fill="url(#parentJacket)" />
+
+  <!-- Guardian Heart Pin -->
+  <circle cx="68" cy="222" r="7.5" fill="#cf302d"/>
+  <path d="M68 226 C68 226 64 223 64 220 C64 218 66 217 68 219 C70 217 72 218 72 220 C72 223 68 226 68 226 Z" fill="#ffffff"/>
+
+  <!-- Face -->
+  <path d="M84 92 C84 62 156 62 156 92 C156 128 144 154 120 154 C96 154 84 128 84 92 Z" fill="url(#parentSkin)" />
+
+  <!-- Ears -->
+  <ellipse cx="82" cy="102" rx="6" ry="11" fill="#deb095"/>
+  <ellipse cx="158" cy="102" rx="6" ry="11" fill="#deb095"/>
+
+  <!-- Hair -->
+  <path d="M82 86 C82 48 102 38 120 38 C140 38 158 48 158 86 C158 90 154 86 150 82 C144 76 136 74 126 74 C114 74 104 78 96 82 C88 86 82 89 82 86 Z" fill="#292524" />
+
+  <!-- Eyebrows -->
+  <path d="M96 90 Q106 86 114 90" stroke="#262626" stroke-width="3" stroke-linecap="round" fill="none"/>
+  <path d="M126 90 Q134 86 144 90" stroke="#262626" stroke-width="3" stroke-linecap="round" fill="none"/>
+
+  <!-- Eyes -->
+  <ellipse cx="106" cy="100" rx="4" ry="4.5" fill="#1e1b18"/>
+  <circle cx="107.5" cy="98.5" r="1.5" fill="#ffffff"/>
+  <ellipse cx="134" cy="100" rx="4" ry="4.5" fill="#1e1b18"/>
+  <circle cx="135.5" cy="98.5" r="1.5" fill="#ffffff"/>
+
+  <!-- Nose -->
+  <path d="M119 104 Q121 116 117 118 Q122 119 123 118" stroke="#cf9b82" stroke-width="2" stroke-linecap="round" fill="none"/>
+
+  <!-- Friendly Warm Smile -->
+  <path d="M109 130 Q120 138 131 130" stroke="#b91c1c" stroke-width="2.5" stroke-linecap="round" fill="none"/>
+</svg>
+

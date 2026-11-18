@@ -1,0 +1,77 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 280" width="240" height="280">
+  <defs>
+    <linearGradient id="teachMaleBg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#fff5f2"/>
+      <stop offset="100%" stop-color="#fedfd8"/>
+    </linearGradient>
+    <linearGradient id="teachMaleSuit" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#334155"/>
+      <stop offset="100%" stop-color="#1e293b"/>
+    </linearGradient>
+    <linearGradient id="teachMaleTie" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#0284c7"/>
+      <stop offset="100%" stop-color="#0369a1"/>
+    </linearGradient>
+    <linearGradient id="teachMaleSkin" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#f5cbb1"/>
+      <stop offset="100%" stop-color="#e8b497"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Background Card -->
+  <rect width="240" height="280" rx="20" fill="url(#teachMaleBg)" />
+  <circle cx="120" cy="115" r="75" fill="#fde2db" opacity="0.8"/>
+
+  <!-- Neck & Collar Base -->
+  <path d="M106 140 L134 140 L138 178 L102 178 Z" fill="#deb095" />
+  
+  <!-- Light Blue Formal Shirt -->
+  <polygon points="90,165 120,195 106,170" fill="#e0f2fe" stroke="#bae6fd" stroke-width="1.5"/>
+  <polygon points="150,165 120,195 134,170" fill="#e0f2fe" stroke="#bae6fd" stroke-width="1.5"/>
+
+  <!-- Formal Blue Tie -->
+  <polygon points="114,170 126,170 129,182 120,188 111,182" fill="url(#teachMaleTie)"/>
+  <polygon points="113,184 127,184 132,250 120,265 108,250" fill="url(#teachMaleTie)"/>
+
+  <!-- Faculty ID Lanyard -->
+  <path d="M96 168 L108 230 L114 230 L104 168" stroke="#d97706" stroke-width="3" fill="none"/>
+  <path d="M144 168 L132 230 L126 230 L136 168" stroke="#d97706" stroke-width="3" fill="none"/>
+
+  <!-- Charcoal Faculty Blazer -->
+  <path d="M40 280 L40 228 C40 198 65 178 88 170 L106 215 L106 280 Z" fill="url(#teachMaleSuit)" />
+  <path d="M200 280 L200 228 C200 198 175 178 152 170 L134 215 L134 280 Z" fill="url(#teachMaleSuit)" />
+  <!-- Lapels -->
+  <polygon points="88,170 108,225 120,200 106,168" fill="#475569" />
+  <polygon points="152,170 132,225 120,200 134,168" fill="#475569" />
+
+  <!-- Face -->
+  <path d="M84 92 C84 62 156 62 156 92 C156 128 144 154 120 154 C96 154 84 128 84 92 Z" fill="url(#teachMaleSkin)" />
+
+  <!-- Ears -->
+  <ellipse cx="82" cy="102" rx="6" ry="11" fill="#deb095"/>
+  <ellipse cx="158" cy="102" rx="6" ry="11" fill="#deb095"/>
+
+  <!-- Hair -->
+  <path d="M82 86 C82 48 102 38 120 38 C140 38 158 48 158 86 C158 90 154 86 150 82 C144 76 136 74 126 74 C114 74 104 78 96 82 C88 86 82 89 82 86 Z" fill="#292524" />
+
+  <!-- Spectacles -->
+  <rect x="94" y="94" width="22" height="15" rx="3" fill="none" stroke="#475569" stroke-width="2"/>
+  <rect x="124" y="94" width="22" height="15" rx="3" fill="none" stroke="#475569" stroke-width="2"/>
+  <line x1="116" y1="100" x2="124" y2="100" stroke="#475569" stroke-width="2"/>
+  <line x1="86" y1="98" x2="94" y2="98" stroke="#475569" stroke-width="1.5"/>
+  <line x1="146" y1="98" x2="154" y2="98" stroke="#475569" stroke-width="1.5"/>
+
+  <!-- Eyes behind glasses -->
+  <ellipse cx="105" cy="101" rx="3.5" ry="4" fill="#1c1917"/>
+  <circle cx="106.5" cy="99.5" r="1.2" fill="#ffffff"/>
+  <ellipse cx="135" cy="101" rx="3.5" ry="4" fill="#1c1917"/>
+  <circle cx="136.5" cy="99.5" r="1.2" fill="#ffffff"/>
+
+  <!-- Nose -->
+  <path d="M119 105 Q121 116 117 118 Q122 119 123 118" stroke="#cf9b82" stroke-width="2" stroke-linecap="round" fill="none"/>
+
+  <!-- Smile & Moustache -->
+  <path d="M106 126 Q120 128 134 126" stroke="#292524" stroke-width="2.5" stroke-linecap="round" fill="none"/>
+  <path d="M110 134 Q120 140 130 134" stroke="#b91c1c" stroke-width="2" stroke-linecap="round" fill="none"/>
+</svg>
+

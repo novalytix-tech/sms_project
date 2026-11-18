@@ -1,0 +1,81 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 280" width="240" height="280">
+  <defs>
+    <linearGradient id="supAdminBg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#fff5f5"/>
+      <stop offset="100%" stop-color="#fee2e2"/>
+    </linearGradient>
+    <linearGradient id="supAdminSuit" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0f172a"/>
+      <stop offset="100%" stop-color="#020617"/>
+    </linearGradient>
+    <linearGradient id="supAdminLapel" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#1e293b"/>
+      <stop offset="100%" stop-color="#0f172a"/>
+    </linearGradient>
+    <linearGradient id="supAdminSkin" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#f8cfb7"/>
+      <stop offset="100%" stop-color="#e2ad88"/>
+    </linearGradient>
+    <linearGradient id="superBadge" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#6366f1"/>
+      <stop offset="100%" stop-color="#4338ca"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Background Card -->
+  <rect width="240" height="280" rx="20" fill="url(#supAdminBg)" />
+  <circle cx="120" cy="115" r="75" fill="#fecdd3" opacity="0.6"/>
+
+  <!-- Neck & Collar Base -->
+  <path d="M106 140 L134 140 L138 178 L102 178 Z" fill="#deb095" />
+
+  <!-- Modern Dark Navy Charcoal Collarless Shirt / Band Collar -->
+  <polygon points="92,165 120,190 106,170" fill="#ffffff" stroke="#e2e8f0" stroke-width="1.5"/>
+  <polygon points="148,165 120,190 134,170" fill="#ffffff" stroke="#e2e8f0" stroke-width="1.5"/>
+
+  <!-- Enterprise Security Lanyard / Tech Badge -->
+  <path d="M100 166 L114 228 L126 228 L140 166" stroke="#4f46e5" stroke-width="3" fill="none"/>
+  <!-- Keycard -->
+  <rect x="110" y="224" width="20" height="28" rx="3" fill="#ffffff" stroke="#cbd5e1" stroke-width="1.5"/>
+  <rect x="113" y="228" width="14" height="6" rx="1" fill="#4f46e5"/>
+  <circle cx="120" cy="242" r="3" fill="#6366f1"/>
+
+  <!-- Sleek Modern Jet Black Executive Jacket -->
+  <path d="M38 280 L38 226 C38 196 64 176 86 168 L104 212 L104 280 Z" fill="url(#supAdminSuit)" />
+  <path d="M202 280 L202 226 C202 196 176 176 154 168 L136 212 L136 280 Z" fill="url(#supAdminSuit)" />
+  <!-- Modern Slim Lapels -->
+  <polygon points="86,168 104,216 120,196 106,168" fill="url(#supAdminLapel)" />
+  <polygon points="154,168 136,216 120,196 134,168" fill="url(#supAdminLapel)" />
+
+  <!-- Super Admin Star Pin on Lapel -->
+  <circle cx="68" cy="222" r="8" fill="url(#superBadge)" stroke="#312e81" stroke-width="1.5"/>
+  <polygon points="68,216 70.5,221 76,221.5 71.5,225 73,230 68,227 63,230 64.5,225 60,221.5 65.5,221" fill="#ffffff"/>
+
+  <!-- Face -->
+  <path d="M84 92 C84 62 156 62 156 92 C156 128 144 154 120 154 C96 154 84 128 84 92 Z" fill="url(#supAdminSkin)" />
+
+  <!-- Ears -->
+  <ellipse cx="82" cy="102" rx="6" ry="11" fill="#deb095"/>
+  <ellipse cx="158" cy="102" rx="6" ry="11" fill="#deb095"/>
+
+  <!-- Modern Haircut / Trimmed Look -->
+  <path d="M82 86 C82 46 102 36 120 36 C140 36 158 46 158 86 C158 90 154 86 150 82 C144 76 136 74 126 74 C114 74 104 78 96 82 C88 86 82 89 82 86 Z" fill="#18181b" />
+  <path d="M84 76 C94 58 122 52 144 60 C154 66 156 78 156 82 C152 70 140 62 120 60 C104 58 92 64 84 76 Z" fill="#27272a" />
+
+  <!-- Eyebrows -->
+  <path d="M95 88 Q106 84 114 88" stroke="#18181b" stroke-width="3" stroke-linecap="round" fill="none"/>
+  <path d="M126 88 Q134 84 145 88" stroke="#18181b" stroke-width="3" stroke-linecap="round" fill="none"/>
+
+  <!-- Eyes -->
+  <ellipse cx="105" cy="99" rx="4" ry="4.5" fill="#09090b"/>
+  <circle cx="106.5" cy="97.5" r="1.5" fill="#ffffff"/>
+  <ellipse cx="135" cy="99" rx="4" ry="4.5" fill="#09090b"/>
+  <circle cx="136.5" cy="97.5" r="1.5" fill="#ffffff"/>
+
+  <!-- Nose -->
+  <path d="M119 104 Q121 115 117 117 Q122 118 123 117" stroke="#cf9b82" stroke-width="2" stroke-linecap="round" fill="none"/>
+
+  <!-- Confident Executive Expression -->
+  <path d="M109 130 Q120 137 131 130" stroke="#991b1b" stroke-width="2.5" stroke-linecap="round" fill="none"/>
+</svg>
+

@@ -1,0 +1,212 @@
+%% ========================================================
+%% SCHOOL ERP — FULL SYSTEM ARCHITECTURE
+%% File: docs/architecture/system-architecture.mmd
+%% Generated for: D:\SMS (Read-Only Architectural Audit)
+%% ========================================================
+
+flowchart TD
+    classDef clientApp fill:#fff5f5,stroke:#cf302d,stroke-width:2px,color:#881337;
+    classDef entryPoint fill:#fdf2f8,stroke:#be185d,stroke-width:2px,color:#831843;
+    classDef coreRouter fill:#f0fdf4,stroke:#16a34a,stroke-width:2px,color:#14532d;
+    classDef authContext fill:#eff6ff,stroke:#2563eb,stroke-width:2px,color:#1e3a8a;
+    classDef uiPage fill:#f8fafc,stroke:#475569,stroke-width:1px,color:#0f172a;
+    classDef serviceLayer fill:#fffbeb,stroke:#d97706,stroke-width:2px,color:#78350f;
+    classDef storageLayer fill:#faf5ff,stroke:#9333ea,stroke-width:2px,color:#581c87;
+    classDef externalMock fill:#f1f5f9,stroke:#94a3b8,stroke-width:1px,stroke-dasharray: 5 5,color:#334155;
+
+    subgraph Browser_Runtime ["Browser Runtime (React 19 SPA)"]
+        HTML["index.html (#root container)"]:::entryPoint
+        Main["src/main.tsx (StrictMode, Global CSS)"]:::entryPoint
+        RootApp["src/App.tsx -> src/app/App.tsx"]:::entryPoint
+        
+        HTML --> Main --> RootApp
+    end
+
+    subgraph State_And_Routing ["Application Shell & Context Providers"]
+        ERPProvider["ERPProvider (src/context/ERPContext.tsx)
+        * Active Role ('school_admin'|'teacher'|'parent'|'student'|'super_admin'|'supplier')
+        * Session Authenticated Flag
+        * Active Ward Selector (parentChildren, selectedChild)
+        * Toast Notification Dispatcher
+        * Cross-Tab Reactive Storage Sync"]:::authContext
+
+        Router["BrowserRouter (src/app/router.tsx)
+        * 22 Route Definitions
+        * ProtectedRoute Guard Integration"]:::coreRouter
+
+        RootApp --> ERPProvider
+        ERPProvider --> Router
+    end
+
+    subgraph Security_And_Guards ["Client-Side Security Layer"]
+        Guard["ProtectedRoute (src/components/common/ProtectedRoute.tsx)
+        * Checks isAuthenticated -> Redirects to /login
+        * Checks allowedRoles -> Redirects to / with Access Toast"]:::authContext
+
+        RBAC["RBAC Policy Engine (src/utils/permissions.ts)
+        * hasCapability(role, capability)
+        * canAccessPath(role, path)
+        * isClassTeacher(teacherId, classes)"]:::authContext
+
+        Router --> Guard
+        Guard -.-> RBAC
+    end
+
+    subgraph Layout_Shell ["Application Layout Shell (src/layouts/AppLayout.tsx)"]
+        AppLayout["AppLayout
+        * Authenticated Shell
+        * Unauthenticated -> LoginPage fallback"]:::uiPage
+        
+        Sidebar["Sidebar (src/components/layout/Sidebar.tsx)
+        * 6 Dynamic Role Nav Groups
+        * Badge Counters (notices, messages, leave)
+        * Transport Visibility Condition"]:::uiPage
+
+        Topbar["Topbar (src/components/layout/Topbar.tsx)
+        * Role Switcher / Persona Selector
+        * Multi-Ward Switcher (for Parents)
+        * Global Quick Search & Profile"]:::uiPage
+
+        Outlet["<Outlet /> (Page Viewport)"]:::uiPage
+
+        AppLayout --> Sidebar
+        AppLayout --> Topbar
+        AppLayout --> Outlet
+        Guard --> AppLayout
+    end
+
+    subgraph UI_Modules ["Page Controllers (src/pages/)"]
+        DashRouter["DashboardRouter (src/pages/dashboards/DashboardRouter.tsx)
+        * SuperAdminDashboard
+        * SchoolAdminDashboard
+        * TeacherDashboard
+        * ParentDashboard
+        * StudentDashboard
+        * SupplierDashboard"]:::uiPage
+
+        PageAdmissions["AdmissionsPage (admissions/)"]:::uiPage
+        PageStudents["StudentsPage (students/)"]:::uiPage
+        PageTeachers["TeachersPage (teachers/)"]:::uiPage
+        PageClasses["ClassesPage (classes/)
+        * Class Management
+        * Session Promotions
+        * Bulk CSV Import"]:::uiPage
+        PageAttendance["AttendancePage (attendance/)
+        * Student Class Attendance
+        * Staff Attendance Roster"]:::uiPage
+        PageAssignments["AssignmentsPage (assignments/)
+        * Homework Creation
+        * Student Submissions
+        * Grading & Revision"]:::uiPage
+        PageExams["ExaminationsPage (examinations/)
+        * CBSE 9-Point Scale
+        * Marks Entry & Reports"]:::uiPage
+        PageFees["FeesPage (fees/)
+        * Invoicing & Policy
+        * Online Demo Payment
+        * A4 Printable Receipts"]:::uiPage
+        PageTimetable["TimetablePage (timetable/)
+        * 8-Period Daily Grid
+        * Teacher Conflict Matrix"]:::uiPage
+        PageStaffGroups["StaffGroupsPage (staff-groups/)
+        * All-Staff / Custom Groups
+        * Common Announcements"]:::uiPage
+        PageClassGroups["ClassGroupsPage (class-groups/)
+        * Teacher-to-Student Class Broadcasts"]:::uiPage
+        PageTransport["TransportPage (transport/)
+        * 5-Tab Fleet & Trips Console
+        * Parent/Student Live GPS Tracking
+        * Boarding Check-In Manifest"]:::uiPage
+        PageSettings["SettingsPage & InstitutionsPage"]:::uiPage
+
+        Outlet --> DashRouter
+        Outlet --> PageAdmissions
+        Outlet --> PageStudents
+        Outlet --> PageTeachers
+        Outlet --> PageClasses
+        Outlet --> PageAttendance
+        Outlet --> PageAssignments
+        Outlet --> PageExams
+        Outlet --> PageFees
+        Outlet --> PageTimetable
+        Outlet --> PageStaffGroups
+        Outlet --> PageClassGroups
+        Outlet --> PageTransport
+        Outlet --> PageSettings
+    end
+
+    subgraph Service_Domain_Layer ["Business Services Layer (src/services/)"]
+        S_Student["studentService.ts"]:::serviceLayer
+        S_Teacher["teacherService.ts"]:::serviceLayer
+        S_Class["classService.ts"]:::serviceLayer
+        S_Session["academicSessionService.ts"]:::serviceLayer
+        S_Enrollment["enrollmentService.ts"]:::serviceLayer
+        S_Promo["promotionService.ts"]:::serviceLayer
+        S_Import["importService.ts"]:::serviceLayer
+        S_Attend["attendanceService.ts"]:::serviceLayer
+        S_StaffAttend["staffAttendanceService.ts"]:::serviceLayer
+        S_Assign["assignmentService.ts"]:::serviceLayer
+        S_Exam["examService.ts"]:::serviceLayer
+        S_Grade["gradingService.ts"]:::serviceLayer
+        S_Fee["feeService.ts & paymentService.ts"]:::serviceLayer
+        S_StaffGroup["staffGroupService.ts"]:::serviceLayer
+        S_ClassGroup["classGroupService.ts"]:::serviceLayer
+        S_Transport["transportService.ts"]:::serviceLayer
+        S_GPS["gpsService.ts"]:::serviceLayer
+        S_Safety["safetyEventService.ts"]:::serviceLayer
+        S_Alert["transportAlertService.ts"]:::serviceLayer
+
+        PageStudents --> S_Student
+        PageClasses --> S_Class & S_Session & S_Enrollment & S_Promo & S_Import
+        PageAttendance --> S_Attend & S_StaffAttend
+        PageAssignments --> S_Assign
+        PageExams --> S_Exam & S_Grade
+        PageFees --> S_Fee
+        PageStaffGroups --> S_StaffGroup
+        PageClassGroups --> S_ClassGroup
+        PageTransport --> S_Transport & S_GPS & S_Safety & S_Alert
+    end
+
+    subgraph Persistence_Layer ["Client-Side Persistence & Storage (src/services/storage.ts)"]
+        ERPStorage["ERPStorage Class (Singleton)
+        * Key: 'nts_novalytix_school_erp_store_v1'
+        * In-Memory Cache (ERPDataStore)
+        * Automatic Backfill & Migrations
+        * Custom Event Dispatch: 'nts_erp_storage_updated'"]:::storageLayer
+
+        SeedData["Seed Data (src/data/seedData.ts)
+        * INITIAL_ERP_DATA
+        * DEMO_USERS (6 Role Profiles)"]:::storageLayer
+
+        LocalStorage[("Browser LocalStorage
+        (Single JSON String, ~3MB)")]:::storageLayer
+
+        Service_Domain_Layer --> ERPStorage
+        ERPStorage -.-> SeedData
+        ERPStorage --> LocalStorage
+        ERPStorage -.->|Event: nts_erp_storage_updated| ERPProvider
+    end
+
+    subgraph External_And_Hardware ["External Integrations & Hardware Reality"]
+        OSM_Tiles["OpenStreetMap Public CDN
+        (tile.openstreetmap.org)
+        * Live Cartography Tiles"]:::externalMock
+
+        GPS_Hardware["[SIMULATED] Hardware GPS / OBD-II
+        * Simulated via gpsService.simulateStepAlongRoute
+        * No physical TCP/NMEA ingestion server"]:::externalMock
+
+        Payment_Gateway["[SIMULATED] Razorpay / Stripe
+        * Simulated via paymentService.processDemoPayment
+        * No real merchant banking gateway"]:::externalMock
+
+        Notification_Gateway["[SIMULATED] SMS / FCM / WhatsApp
+        * Rendered as in-app UI cards
+        * No real cellular push gateway"]:::externalMock
+
+        PageTransport -.-> OSM_Tiles
+        S_GPS -.-> GPS_Hardware
+        S_Fee -.-> Payment_Gateway
+        S_Alert -.-> Notification_Gateway
+    end
+

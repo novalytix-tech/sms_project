@@ -1,0 +1,120 @@
+%% ========================================================
+%% SCHOOL ERP — HOMEWORK & ASSIGNMENT WORKFLOW
+%% File: docs/architecture/homework-workflow.mmd
+%% Generated for: D:\SMS (Read-Only Architectural Audit)
+%% ========================================================
+
+flowchart TD
+    classDef teacherAction fill:#f0fdf4,stroke:#16a34a,stroke-width:2px,color:#14532d;
+    classDef studentAction fill:#faf5ff,stroke:#9333ea,stroke-width:2px,color:#581c87;
+    classDef decisionBranch fill:#fffbeb,stroke:#d97706,stroke-width:2px,color:#78350f;
+    classDef storageState fill:#eff6ff,stroke:#2563eb,stroke-width:2px,color:#1e3a8a;
+    classDef blockedAction fill:#fef2f2,stroke:#ef4444,stroke-width:1px,color:#991b1b;
+
+    subgraph TEACHER_CREATION ["1. Assignment Creation (Teacher / Admin)"]
+        CreateTask["Teacher clicks 'Create Assignment' on /assignments
+        * Title, Subject, Class & Section
+        * Due Date & Submission Deadline
+        * Maximum Marks (e.g. 25, 50, 100)
+        * Instructions & Resource Attachment Links
+        * Toggle: allowLateSubmissions (true/false)"]:::teacherAction
+
+        SaveTask["assignmentService.create()
+        * Stored in ERPStorage.assignments
+        * Initial status: 'active'
+        * Submissions array initialized"]:::storageState
+
+        CreateTask --> SaveTask
+    end
+
+    subgraph STUDENT_DISCOVERY ["2. Audience Scoping & Student Discovery"]
+        StudentView["Student opens /assignments (or Parent views ward tasks)
+        * Filtered strictly to student's enrolled class & section
+        * Resolves submission state for current student"]:::studentAction
+
+        StatusCheck{"Current Submission State?"}:::decisionBranch
+
+        SaveTask --> StudentView --> StatusCheck
+        StatusCheck -->|No Record| StateNotSub["Card Action: 'Submit Homework'
+        (Status: Not Submitted)"]:::studentAction
+        StatusCheck -->|Draft Saved| StateDraft["Card Action: 'Continue Submission'
+        (Status: Draft)"]:::studentAction
+        StatusCheck -->|Submitted| StateSubmitted["Card Action: 'View Submission'
+        (Status: Submitted, Awaiting Review)"]:::studentAction
+        StatusCheck -->|Returned| StateRevision["Card Action: 'Resubmit Homework'
+        (Status: Returned for Revision)"]:::studentAction
+        StatusCheck -->|Graded| StateGraded["Card Action: 'View Feedback'
+        (Status: Graded)"]:::studentAction
+    end
+
+    subgraph SUBMISSION_WORKFLOW ["3. Student Submission Process"]
+        OpenModal["Student clicks Action Button
+        * Opens Homework Submission Modal
+        * Displays assignment instructions & due date"]:::studentAction
+
+        CheckDeadline{"Is Current Time > Due Date?"}:::decisionBranch
+        OpenModal --> CheckDeadline
+
+        CheckDeadline -->|Past Due & allowLate=false| BlockSubmit["Submission Blocked:
+        'Deadline has passed and late submissions are closed.'"]:::blockedAction
+        CheckDeadline -->|On Time OR allowLate=true| AllowInput["Student enters submission details:
+        * Rich text solution / notes
+        * Attached file name / document link
+        * Submission comments"]:::studentAction
+
+        DecisionSave{"Student Choice"}:::decisionBranch
+        AllowInput --> DecisionSave
+
+        SaveDraft["assignmentService.saveDraft()
+        * Status: 'draft'
+        * Edits preserved for student only
+        * Not visible to teacher as ready"]:::studentAction
+
+        FinalSubmit["assignmentService.submitHomework()
+        * Status: 'submitted'
+        * Timestamp recorded
+        * IsLate flag recorded if past deadline
+        * Notifies teacher roster"]:::studentAction
+
+        DecisionSave -->|Save for Later| SaveDraft
+        DecisionSave -->|Final Submit| FinalSubmit
+    end
+
+    subgraph TEACHER_EVALUATION ["4. Teacher Review & Grading"]
+        ReviewRoster["Teacher opens Submission Review Drawer
+        * Roster of enrolled students: Submitted, Draft, Missing
+        * Teacher views student attachment & submitted text"]:::teacherAction
+
+        EvaluateMarks["Enter Awarded Marks & Feedback:
+        * Validation: 0 <= Marks <= Maximum Marks
+        * Feedback Comments entered"]:::teacherAction
+
+        EvalDecision{"Teacher Decision"}:::decisionBranch
+
+        FinalSubmit --> ReviewRoster --> EvaluateMarks --> EvalDecision
+
+        PublishGrade["assignmentService.gradeSubmission()
+        * Awarded Marks stored
+        * Teacher Feedback stored
+        * isPublished = true
+        * Status: 'graded'"]:::teacherAction
+
+        ReturnRevision["assignmentService.returnForRevision()
+        * Instructions for rework added
+        * Status: 'returned'
+        * Student can re-edit and resubmit"]:::teacherAction
+
+        EvalDecision -->|Pass / Grade| PublishGrade
+        EvalDecision -->|Needs Work| ReturnRevision
+        ReturnRevision --> StateRevision
+    end
+
+    subgraph STUDENT_FEEDBACK ["5. Published Feedback & Report Integration"]
+        FeedbackView["Student & Parent View Feedback Card:
+        * Awarded Score (e.g. 23 / 25)
+        * Teacher Feedback Remarks
+        * Published Timestamp & Graded Badge"]:::studentAction
+
+        PublishGrade --> FeedbackView
+    end
+

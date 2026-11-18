@@ -1,0 +1,881 @@
+/* ==========================================================================
+   SMS ERP — Professional School Report Card (Human-Designed Institutional Edition)
+   Crafted to mirror authentic CBSE, ICSE and International School Progress Reports
+   ========================================================================== */
+
+/* Outer Controls & Workspace Wrapper */
+.rc-hub-container {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  width: 100%;
+}
+
+.rc-controls-panel {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 16px 20px;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.05);
+}
+
+.rc-controls-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.rc-controls-right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.rc-format-toggle {
+  display: inline-flex;
+  background: #f1f5f9;
+  border-radius: 8px;
+  padding: 3px;
+  border: 1px solid #e2e8f0;
+}
+
+.rc-format-btn {
+  padding: 6px 14px;
+  font-size: 13px;
+  font-weight: 600;
+  border-radius: 6px;
+  border: none;
+  background: transparent;
+  color: #475569;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.rc-format-btn.active {
+  background: #ffffff;
+  color: #0f172a;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06);
+}
+
+.rc-format-btn:hover:not(.active) {
+  color: #0f172a;
+}
+
+/* ==========================================================================
+   THE OFFICIAL REPORT CARD SHEET (DOCUMENT CANVAS)
+   ========================================================================== */
+.rc-document-container {
+  display: flex;
+  justify-content: center;
+  width: 100%;
+  overflow-x: auto;
+  padding-bottom: 24px;
+}
+
+.rc-sheet {
+  position: relative;
+  width: 100%;
+  max-width: 860px;
+  min-height: 1120px;
+  background: #ffffff;
+  color: #0f172a;
+  padding: 36px 40px;
+  border-radius: 4px;
+  box-shadow: 0 12px 36px rgba(15, 23, 42, 0.08), 0 1px 3px rgba(15, 23, 42, 0.04);
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  box-sizing: border-box;
+}
+
+/* Double Institutional Border */
+.rc-sheet-border {
+  position: absolute;
+  top: 14px;
+  left: 14px;
+  right: 14px;
+  bottom: 14px;
+  border: 2.5px solid #1e293b;
+  pointer-events: none;
+  z-index: 2;
+}
+
+.rc-sheet-border-inner {
+  position: absolute;
+  top: 18px;
+  left: 18px;
+  right: 18px;
+  bottom: 18px;
+  border: 1px solid #b45309; /* Warm gold inner rule */
+  pointer-events: none;
+  z-index: 2;
+}
+
+/* Corner Rosettes */
+.rc-corner {
+  position: absolute;
+  width: 16px;
+  height: 16px;
+  border-color: #b45309;
+  border-style: solid;
+  pointer-events: none;
+  z-index: 3;
+}
+
+.rc-corner-tl { top: 22px; left: 22px; border-width: 2px 0 0 2px; }
+.rc-corner-tr { top: 22px; right: 22px; border-width: 2px 2px 0 0; }
+.rc-corner-bl { bottom: 22px; left: 22px; border-width: 0 0 2px 2px; }
+.rc-corner-br { bottom: 22px; right: 22px; border-width: 0 2px 2px 0; }
+
+/* Centered Faint Watermark */
+.rc-watermark {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 360px;
+  height: 360px;
+  opacity: 0.035;
+  pointer-events: none;
+  z-index: 0;
+  user-select: none;
+}
+
+/* Sheet Interior Layer */
+.rc-body {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+/* ==========================================================================
+   1. INSTITUTIONAL LETTERHEAD
+   ========================================================================== */
+.rc-letterhead {
+  display: grid;
+  grid-template-columns: 84px 1fr 84px;
+  align-items: center;
+  gap: 16px;
+  padding-bottom: 14px;
+  border-bottom: 2px solid #0f172a;
+}
+
+.rc-crest-box {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.rc-crest-svg {
+  width: 76px;
+  height: 76px;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.08));
+}
+
+.rc-school-meta {
+  text-align: center;
+}
+
+.rc-school-name {
+  font-family: 'Cinzel', 'Playfair Display', 'Merriweather', 'Georgia', serif;
+  font-size: 23px;
+  font-weight: 800;
+  letter-spacing: 0.75px;
+  color: #0f172a;
+  text-transform: uppercase;
+  margin: 0;
+  line-height: 1.2;
+}
+
+.rc-school-tagline {
+  font-size: 11px;
+  font-weight: 600;
+  color: #475569;
+  margin-top: 3px;
+  letter-spacing: 0.2px;
+}
+
+.rc-school-affiliation {
+  font-size: 10.5px;
+  color: #334155;
+  margin-top: 2px;
+  font-weight: 500;
+}
+
+.rc-school-affiliation strong {
+  color: #0f172a;
+}
+
+.rc-school-address {
+  font-size: 10px;
+  color: #64748b;
+  margin-top: 2px;
+}
+
+.rc-qr-box {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.rc-qr-frame {
+  padding: 4px;
+  border: 1px solid #cbd5e1;
+  border-radius: 4px;
+  background: #ffffff;
+}
+
+.rc-qr-caption {
+  font-size: 8px;
+  font-weight: 700;
+  color: #475569;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-top: 3px;
+  text-align: center;
+}
+
+/* Document Title Strip */
+.rc-title-strip {
+  text-align: center;
+  background: linear-gradient(180deg, #f8fafc 0%, #f1f5f9 100%);
+  border: 1px solid #cbd5e1;
+  border-left: 4px solid #b91c1c; /* Crimson accent */
+  border-radius: 4px;
+  padding: 8px 14px;
+}
+
+.rc-doc-title {
+  font-family: 'Cinzel', 'Playfair Display', 'Georgia', serif;
+  font-size: 14.5px;
+  font-weight: 800;
+  letter-spacing: 1.2px;
+  color: #0f172a;
+  text-transform: uppercase;
+  margin: 0;
+}
+
+.rc-doc-subtitle {
+  font-size: 11px;
+  font-weight: 600;
+  color: #b91c1c;
+  margin-top: 2px;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+}
+
+/* ==========================================================================
+   2. STUDENT PROFILE LEDGER (DOSSIER)
+   ========================================================================== */
+.rc-dossier-box {
+  display: grid;
+  grid-template-columns: 1fr 1fr 100px;
+  gap: 14px;
+  background: #fdfdfd;
+  border: 1px solid #cbd5e1;
+  border-radius: 4px;
+  padding: 12px 14px;
+}
+
+.rc-dossier-col {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.rc-dossier-row {
+  display: flex;
+  font-size: 11.5px;
+  line-height: 1.4;
+}
+
+.rc-dossier-label {
+  font-weight: 600;
+  color: #475569;
+  width: 125px;
+  flex-shrink: 0;
+  text-transform: uppercase;
+  font-size: 10px;
+  letter-spacing: 0.3px;
+}
+
+.rc-dossier-val {
+  font-weight: 700;
+  color: #0f172a;
+  flex: 1;
+}
+
+.rc-dossier-val.student-name-highlight {
+  font-size: 12.5px;
+  color: #0f172a;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  text-decoration-color: #cbd5e1;
+}
+
+.rc-dossier-photo-col {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.rc-photo-frame {
+  width: 82px;
+  height: 98px;
+  border: 1.5px solid #94a3b8;
+  border-radius: 4px;
+  background: #f8fafc;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 4px;
+  position: relative;
+  overflow: hidden;
+}
+
+.rc-photo-frame img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 2px;
+}
+
+.rc-photo-placeholder {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  color: #64748b;
+  font-size: 8px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+.rc-photo-initials {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  background: #1e293b;
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  font-weight: 700;
+  margin-bottom: 2px;
+}
+
+.rc-photo-seal-corner {
+  position: absolute;
+  bottom: -4px;
+  right: -4px;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: rgba(185, 28, 28, 0.12);
+  border: 1px solid #b91c1c;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 6px;
+  font-weight: 800;
+  color: #b91c1c;
+  text-transform: uppercase;
+}
+
+/* ==========================================================================
+   3. SCHOLASTIC PERFORMANCE TABLE (PART 1)
+   ========================================================================== */
+.rc-section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-bottom: 6px;
+  padding-bottom: 3px;
+  border-bottom: 1.5px solid #0f172a;
+}
+
+.rc-section-title {
+  font-size: 11.5px;
+  font-weight: 800;
+  color: #0f172a;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.rc-section-scale-ref {
+  font-size: 9.5px;
+  color: #475569;
+  font-weight: 600;
+}
+
+.rc-table-wrapper {
+  width: 100%;
+  overflow-x: auto;
+}
+
+.rc-academic-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 11px;
+}
+
+.rc-academic-table th {
+  background: #f1f5f9;
+  color: #0f172a;
+  font-weight: 700;
+  text-transform: uppercase;
+  font-size: 9.5px;
+  letter-spacing: 0.4px;
+  padding: 7px 6px;
+  border: 1px solid #cbd5e1;
+  text-align: center;
+  vertical-align: middle;
+}
+
+.rc-academic-table th.th-left {
+  text-align: left;
+  padding-left: 8px;
+}
+
+.rc-academic-table td {
+  padding: 6px 6px;
+  border: 1px solid #cbd5e1;
+  color: #1e293b;
+  vertical-align: middle;
+}
+
+.rc-academic-table td.td-center {
+  text-align: center;
+}
+
+.rc-academic-table td.td-bold {
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.rc-academic-table td.td-subject {
+  font-weight: 700;
+  color: #0f172a;
+  padding-left: 8px;
+}
+
+.rc-academic-table td.td-words {
+  font-style: italic;
+  font-size: 10px;
+  color: #334155;
+  text-align: left;
+  padding-left: 8px;
+}
+
+.rc-academic-table td.td-remarks {
+  font-size: 10px;
+  color: #475569;
+  padding-left: 8px;
+}
+
+.rc-academic-table tr.total-row {
+  background: #f8fafc;
+  font-weight: 800;
+  border-top: 2px solid #0f172a;
+}
+
+.rc-academic-table tr.total-row td {
+  border-top: 2px solid #0f172a;
+  color: #0f172a;
+  padding: 8px 6px;
+}
+
+.rc-grade-pill {
+  display: inline-block;
+  font-weight: 800;
+  font-size: 10.5px;
+  color: #0f172a;
+}
+
+/* ==========================================================================
+   4. CO-SCHOLASTIC & LIFE SKILLS (PART 2)
+   ========================================================================== */
+.rc-coscholastic-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 11px;
+}
+
+.rc-coscholastic-table th {
+  background: #f1f5f9;
+  color: #0f172a;
+  font-weight: 700;
+  text-transform: uppercase;
+  font-size: 9.5px;
+  letter-spacing: 0.4px;
+  padding: 6px 8px;
+  border: 1px solid #cbd5e1;
+  text-align: left;
+}
+
+.rc-coscholastic-table td {
+  padding: 6px 8px;
+  border: 1px solid #cbd5e1;
+  color: #334155;
+  font-size: 10.5px;
+  line-height: 1.35;
+}
+
+.rc-coscholastic-table td.td-activity {
+  font-weight: 700;
+  color: #0f172a;
+  width: 220px;
+}
+
+.rc-coscholastic-table td.td-grade {
+  text-align: center;
+  font-weight: 800;
+  color: #0f172a;
+  width: 60px;
+}
+
+/* ==========================================================================
+   5. OVERALL ACADEMIC STANDING & PROMOTIONAL RESULT
+   ========================================================================== */
+.rc-assessment-strip {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr) 220px;
+  gap: 8px;
+  background: #fdfdfd;
+  border: 1.5px solid #0f172a;
+  border-radius: 4px;
+  padding: 10px 14px;
+  align-items: center;
+}
+
+.rc-stat-block {
+  display: flex;
+  flex-direction: column;
+}
+
+.rc-stat-label {
+  font-size: 9px;
+  font-weight: 700;
+  color: #475569;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+}
+
+.rc-stat-value {
+  font-size: 16px;
+  font-weight: 800;
+  color: #0f172a;
+  margin-top: 1px;
+}
+
+.rc-result-badge-block {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.rc-verdict-stamp {
+  border: 2px solid #15803d; /* Green stamp */
+  background: #f0fdf4;
+  color: #15803d;
+  padding: 6px 12px;
+  border-radius: 4px;
+  text-align: center;
+  font-weight: 800;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  line-height: 1.3;
+}
+
+.rc-verdict-stamp.fail-stamp {
+  border-color: #b91c1c;
+  background: #fef2f2;
+  color: #b91c1c;
+}
+
+/* ==========================================================================
+   6. QUALITATIVE REMARKS (HUMAN TOUCH)
+   ========================================================================== */
+.rc-remarks-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.rc-remark-box {
+  border: 1px solid #cbd5e1;
+  border-radius: 4px;
+  background: #fafafa;
+  padding: 10px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.rc-remark-title {
+  font-size: 9.5px;
+  font-weight: 700;
+  color: #475569;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.rc-remark-text {
+  font-size: 11px;
+  line-height: 1.45;
+  color: #1e293b;
+  font-style: italic;
+}
+
+.rc-remark-edit-input {
+  width: 100%;
+  font-size: 11px;
+  font-family: inherit;
+  padding: 6px 8px;
+  border: 1px solid #94a3b8;
+  border-radius: 4px;
+  background: #ffffff;
+  resize: vertical;
+  min-height: 52px;
+}
+
+/* ==========================================================================
+   7. OFFICIAL SIGNATURES & INSTITUTIONAL EMBOSSED SEAL
+   ========================================================================== */
+.rc-signatures-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 16px;
+  margin-top: 24px;
+  padding-top: 10px;
+  border-top: 1px dashed #cbd5e1;
+  align-items: flex-end;
+}
+
+.rc-sig-col {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  position: relative;
+}
+
+.rc-sig-art {
+  height: 38px;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  margin-bottom: 4px;
+}
+
+.rc-sig-glyph {
+  font-family: 'Brush Script MT', 'Great Vibes', cursive, sans-serif;
+  font-size: 20px;
+  color: #1e3a8a; /* Deep formal blue ink */
+  user-select: none;
+  transform: rotate(-3deg);
+}
+
+.rc-sig-line {
+  width: 150px;
+  height: 1px;
+  background: #475569;
+  margin-bottom: 4px;
+}
+
+.rc-sig-name {
+  font-size: 11px;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.rc-sig-role {
+  font-size: 9.5px;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+/* Official Institutional Round Seal Stamp */
+.rc-official-seal {
+  position: absolute;
+  top: -30px;
+  width: 74px;
+  height: 74px;
+  border-radius: 50%;
+  border: 2px dashed #b91c1c; /* Crimson wax/ink look */
+  outline: 1px solid #b91c1c;
+  outline-offset: -5px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  color: #b91c1c;
+  opacity: 0.85;
+  transform: rotate(-12deg);
+  pointer-events: none;
+  background: rgba(254, 242, 242, 0.45);
+}
+
+.rc-seal-text-top {
+  font-size: 6px;
+  font-weight: 800;
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+}
+
+.rc-seal-center-star {
+  font-size: 11px;
+  line-height: 1;
+  margin: 1px 0;
+}
+
+.rc-seal-text-bot {
+  font-size: 5.5px;
+  font-weight: 700;
+  letter-spacing: 0.3px;
+  text-transform: uppercase;
+}
+
+/* ==========================================================================
+   8. GRADING SCALE REFERENCE KEY (LEGEND)
+   ========================================================================== */
+.rc-grading-legend {
+  background: #f8fafc;
+  border: 1px solid #cbd5e1;
+  border-radius: 4px;
+  padding: 6px 10px;
+  font-size: 9px;
+  color: #475569;
+  line-height: 1.4;
+}
+
+.rc-legend-title {
+  font-weight: 700;
+  color: #1e293b;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  margin-bottom: 3px;
+}
+
+.rc-legend-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 14px;
+}
+
+.rc-legend-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.rc-legend-grade {
+  font-weight: 800;
+  color: #0f172a;
+}
+
+/* ==========================================================================
+   PRINT STYLESHEET (@media print)
+   Produces a pristine, border-to-border A4 printed report card with 0 clutter
+   ========================================================================== */
+@media print {
+  @page {
+    size: A4 portrait;
+    margin: 8mm 6mm;
+  }
+
+  /* Hide all surrounding application chrome */
+  body * {
+    visibility: hidden;
+  }
+
+  .rc-sheet,
+  .rc-sheet * {
+    visibility: visible;
+  }
+
+  .rc-controls-panel,
+  .rc-hub-container > .card,
+  .sidebar,
+  .topbar,
+  .nav,
+  .tabs,
+  .no-print,
+  button {
+    display: none !important;
+  }
+
+  .rc-document-container {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    margin: 0;
+    padding: 0;
+    overflow: visible;
+  }
+
+  .rc-sheet {
+    position: static;
+    max-width: 100% !important;
+    width: 100% !important;
+    box-shadow: none !important;
+    border: none !important;
+    padding: 24px 28px !important;
+    min-height: auto !important;
+    background: #ffffff !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  .rc-sheet-border {
+    border-color: #000000 !important;
+  }
+
+  .rc-sheet-border-inner {
+    border-color: #78350f !important;
+  }
+
+  .rc-academic-table th {
+    background: #f1f5f9 !important;
+    color: #000000 !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  .rc-verdict-stamp {
+    border-color: #15803d !important;
+    color: #15803d !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  .rc-official-seal {
+    border-color: #b91c1c !important;
+    color: #b91c1c !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+}
+

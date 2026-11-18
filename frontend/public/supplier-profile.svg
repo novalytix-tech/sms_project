@@ -1,0 +1,42 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 280" width="240" height="280">
+  <defs>
+    <linearGradient id="suppBg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#fff8f7"/>
+      <stop offset="100%" stop-color="#fedfd8"/>
+    </linearGradient>
+    <linearGradient id="suppTeal" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#1D4ED8"/>
+      <stop offset="100%" stop-color="#115e59"/>
+    </linearGradient>
+    <linearGradient id="suppGold" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#f59e0b"/>
+      <stop offset="100%" stop-color="#d97706"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Background Card -->
+  <rect width="240" height="280" rx="20" fill="url(#suppBg)" />
+
+  <!-- Shield Base -->
+  <path d="M120 25 C168 25 192 45 192 98 C192 170 138 206 120 216 C102 206 48 170 48 98 C48 45 72 25 120 25 Z" fill="#ffffff" stroke="#fecdd3" stroke-width="2.5"/>
+
+  <!-- Inner Seal Ring -->
+  <circle cx="120" cy="110" r="62" fill="#EFF6FF" stroke="url(#suppTeal)" stroke-width="2.5" stroke-dasharray="5 3"/>
+
+  <!-- Supply Logistics Box / Package Icon -->
+  <polygon points="120,64 158,82 120,100 82,82" fill="url(#suppGold)"/>
+  <polygon points="82,82 120,100 120,144 82,126" fill="#d97706"/>
+  <polygon points="158,82 120,100 120,144 158,126" fill="#b45309"/>
+
+  <!-- Box Tape Strip -->
+  <line x1="120" y1="72" x2="120" y2="92" stroke="#fef3c7" stroke-width="3"/>
+
+  <!-- Delivery / Handshake / Verified Checkmark -->
+  <circle cx="120" cy="158" r="18" fill="url(#suppTeal)"/>
+  <path d="M112 158 L117 163 L129 151" stroke="#ffffff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+
+  <!-- Ribbon at bottom -->
+  <path d="M44 238 L68 224 L120 228 L172 224 L196 238 L178 255 L120 250 L62 255 Z" fill="url(#suppTeal)"/>
+  <text x="120" y="244" font-family="system-ui, -apple-system, sans-serif" font-size="10.5" font-weight="800" fill="#ffffff" text-anchor="middle" letter-spacing="1.2">AUTHORIZED VENDOR</text>
+</svg>
+

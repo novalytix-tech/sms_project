@@ -1,0 +1,115 @@
+%% ========================================================
+%% SCHOOL ERP — STUDENT ACADEMIC LIFECYCLE WORKFLOW
+%% File: docs/architecture/student-lifecycle.mmd
+%% Generated for: D:\SMS (Read-Only Architectural Audit)
+%% ========================================================
+
+flowchart TD
+    classDef implementedStep fill:#f0fdf4,stroke:#16a34a,stroke-width:2px,color:#14532d;
+    classDef decisionBranch fill:#fffbeb,stroke:#d97706,stroke-width:2px,color:#78350f;
+    classDef plannedStep fill:#f8fafc,stroke:#94a3b8,stroke-width:2px,stroke-dasharray: 5 5,color:#475569;
+    classDef rejectedStep fill:#fef2f2,stroke:#ef4444,stroke-width:1px,color:#991b1b;
+
+    subgraph PHASE_1 ["Phase 1: Admissions & Inquiry Lifecycle (IMPLEMENTED)"]
+        Inquiry["1. Public / Desk Inquiry
+        * createInquiry(input) in admissionService.ts
+        * Generates Application No: APP-2026-XXXX
+        * Sibling Detection by parent phone/email"]:::implementedStep
+
+        DocReview{"Mandatory Documents & Fee Clearance?"}:::decisionBranch
+
+        Approve["2. Admission Approval
+        * approveApplication(appId) in admissionService.ts
+        * Status becomes 'approved'"]:::implementedStep
+
+        RejectApp["Application Rejected / Waitlisted"]:::rejectedStep
+
+        Inquiry --> DocReview
+        DocReview -->|Verified & Paid| Approve
+        DocReview -->|Incomplete| RejectApp
+    end
+
+    subgraph PHASE_2 ["Phase 2: Enrollment & Class Allocation (IMPLEMENTED)"]
+        Enrollment["3. Official Student Enrollment
+        * enrollStudent(appId, classId, section)
+        * Generates Permanent Admission No: ADM-2026-XXX
+        * Creates Student record in students collection
+        * Creates initial StudentEnrollment in studentEnrollments"]:::implementedStep
+
+        ClassAlloc["4. Class & Section Assignment
+        * Assigned to Class (e.g. Class 10-A)
+        * Assigned to Academic Session (e.g. Session 2026-2027)
+        * Auto-enrolled in Class Group (e.g. Class 10-A Group)
+        * Roll Number assigned (e.g. 10A-01)"]:::implementedStep
+
+        Approve --> Enrollment --> ClassAlloc
+    end
+
+    subgraph PHASE_3 ["Phase 3: Active Academic Year Lifecycle (IMPLEMENTED)"]
+        Attendance["Daily Attendance Marking
+        * attendanceService.saveClassAttendance
+        * Records: Present, Absent, Late, Excused
+        * Monthly attendance % & shortage alerts (<75%)"]:::implementedStep
+
+        Homework["Homework & Tasks
+        * assignmentService: Tasks created by teachers
+        * Students save drafts & submit online
+        * Teachers grade & publish feedback"]:::implementedStep
+
+        Exams["Exams & CBSE Grading
+        * examService: Term 1, Midterm, Annual
+        * gradingService: CBSE 9-Point Scale (A1 to E2)
+        * Published Term Report Cards"]:::implementedStep
+
+        Finance["Fees & Invoicing
+        * feeService: Term Invoices generated
+        * paymentService: Online demo payments (UPI/Card)
+        * A4 Printable Official Receipts"]:::implementedStep
+
+        Transport["Transport & Safety
+        * transportService: Optional Bus Route Enrollment
+        * gpsService: Live Bus Tracking & ETA
+        * safetyEventService: Boarding / Drop Checkpoints"]:::implementedStep
+
+        ClassAlloc --> Attendance & Homework & Exams & Finance & Transport
+    end
+
+    subgraph PHASE_4 ["Phase 4: Academic Year-End & Promotion (IMPLEMENTED)"]
+        YearEndReview["5. Session Promotion Evaluation
+        * promotionService.evaluateEligibility
+        * Academic Criteria: >= 33% Pass in Core Subjects
+        * Attendance Criteria: >= 75% Attendance Record
+        * Flags: Promoted, Conditional, Retained"]:::implementedStep
+
+        PromoDecision{"Promotion Review by Class Teacher & Admin"}:::decisionBranch
+
+        BatchPromotion["6. Bulk / Individual Student Promotion
+        * promotionService.promoteStudents(batchInput)
+        * Creates PromotionBatch record (auditable)
+        * Enrolls student in next session (e.g. Class 11-A, 2027-2028)
+        * Preserves previous year records with status 'promoted'"]:::implementedStep
+
+        Retained["Student Retained in Same Grade
+        * Enrolled in same class for next session
+        * Status marked as 'retained'"]:::implementedStep
+
+        Attendance & Homework & Exams --> YearEndReview
+        YearEndReview --> PromoDecision
+        PromoDecision -->|Eligible| BatchPromotion
+        PromoDecision -->|Failed / Shortage| Retained
+    end
+
+    subgraph PHASE_5 ["Phase 5: Exit, Transfer & Graduation"]
+        Withdrawal["Student Withdrawal / Transfer Certificate (TC)
+        * enrollmentService.updateStatus('withdrawn')
+        * Mandatory Exit Reason recorded
+        * Archive student profile in ERPStorage (IMPLEMENTED)"]:::implementedStep
+
+        Graduation["Senior Secondary Graduation (Class 12)
+        * Alumni Portal & Transcript Issuance
+        * Automated Degree Generation (PLANNED / FUTURE BACKEND)"]:::plannedStep
+
+        BatchPromotion -->|Relocation / Exit| Withdrawal
+        BatchPromotion -->|Class 12 Completion| Graduation
+    end
+

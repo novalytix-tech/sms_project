@@ -1,0 +1,311 @@
+/* ========================================================
+   Class Management, Session Promotion & Roster Styles
+   Warm Crimson & Off-White Theme (Native CSS)
+   Developed by NTS Novalytix
+   ======================================================== */
+
+.classes-container {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+/* Tabs Header */
+.classes-tabs {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  border-bottom: 2px solid var(--color-sidebar-border, #f1e5e4);
+  padding-bottom: 0.25rem;
+  margin-bottom: 0.5rem;
+  overflow-x: auto;
+}
+
+.classes-tab-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.65rem 1.15rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--color-text-secondary, #64748b);
+  background: transparent;
+  border: none;
+  border-radius: 0.5rem 0.5rem 0 0;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+  position: relative;
+}
+
+.classes-tab-btn:hover {
+  color: var(--color-primary, #3B82F6);
+  background: rgba(59, 130, 246, 0.04);
+}
+
+.classes-tab-btn.active {
+  color: var(--color-primary, #3B82F6);
+  background: #ffffff;
+  border-bottom: 2px solid var(--color-primary, #3B82F6);
+}
+
+.classes-tab-btn .badge-pill {
+  font-size: 0.6875rem;
+  padding: 0.15rem 0.45rem;
+  border-radius: 9999px;
+  background: rgba(59, 130, 246, 0.1);
+  color: var(--color-primary, #3B82F6);
+}
+
+/* Class Teacher Top Banner */
+.class-teacher-banner {
+  background: linear-gradient(135deg, #fff5f5 0%, #fffbfb 100%);
+  border: 1px solid #fed7d7;
+  border-left: 5px solid #3B82F6;
+  border-radius: 0.625rem;
+  padding: 1.15rem 1.5rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.class-teacher-banner-left {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.class-teacher-avatar-circle {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: #3B82F6;
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 1.125rem;
+  box-shadow: 0 2px 4px rgba(59, 130, 246, 0.2);
+}
+
+/* Class Metrics Grid */
+.class-metrics-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 1rem;
+}
+
+.class-metric-card {
+  background: #ffffff;
+  border: 1px solid var(--color-sidebar-border, #f1e5e4);
+  border-radius: 0.625rem;
+  padding: 1rem 1.15rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+}
+
+.class-metric-label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: var(--color-text-secondary, #64748b);
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.class-metric-val {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--color-text-main, #1e293b);
+  line-height: 1.2;
+}
+
+.class-metric-subtext {
+  font-size: 0.75rem;
+  color: var(--color-text-muted, #94a3b8);
+}
+
+/* Capacity Occupancy Bar */
+.occupancy-bar-container {
+  width: 100%;
+  height: 6px;
+  background: #f1f5f9;
+  border-radius: 9999px;
+  overflow: hidden;
+  margin-top: 0.35rem;
+}
+
+.occupancy-bar-fill {
+  height: 100%;
+  background: #3B82F6;
+  border-radius: 9999px;
+  transition: width 0.3s ease;
+}
+
+.occupancy-bar-fill.warning {
+  background: #f59e0b;
+}
+
+.occupancy-bar-fill.danger {
+  background: #dc2626;
+}
+
+/* Interactive Roster Table */
+.roster-table-container {
+  background: #ffffff;
+  border: 1px solid var(--color-sidebar-border, #f1e5e4);
+  border-radius: 0.625rem;
+  overflow-x: auto;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+}
+
+.roster-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.875rem;
+  text-align: left;
+}
+
+.roster-table th {
+  background: #F6F8FC;
+  color: #881337;
+  font-weight: 600;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid #fed7d7;
+  white-space: nowrap;
+}
+
+.roster-table td {
+  padding: 0.85rem 1rem;
+  border-bottom: 1px solid #f1f5f9;
+  color: var(--color-text-main, #1e293b);
+  vertical-align: middle;
+}
+
+.roster-table tr:hover {
+  background: #fffdfd;
+}
+
+/* Status Badges */
+.status-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.2rem 0.55rem;
+  border-radius: 9999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.status-pill.active {
+  background: #f0fdf4;
+  color: #166534;
+  border: 1px solid #bbf7d0;
+}
+
+.status-pill.withdrawn {
+  background: #fef2f2;
+  color: #991b1b;
+  border: 1px solid #fecdd3;
+}
+
+.status-pill.transferred {
+  background: #fefce8;
+  color: #854d0e;
+  border: 1px solid #fef08a;
+}
+
+.status-pill.promoted {
+  background: #eff6ff;
+  color: #1e40af;
+  border: 1px solid #bfdbfe;
+}
+
+.status-pill.retained {
+  background: #fdf2f8;
+  color: #9d174d;
+  border: 1px solid #fbcfe8;
+}
+
+.status-pill.graduated {
+  background: #faf5ff;
+  color: #6b21a8;
+  border: 1px solid #e9d5ff;
+}
+
+/* Promotion Wizard Styles */
+.promotion-config-card {
+  background: #ffffff;
+  border: 1px solid var(--color-sidebar-border, #f1e5e4);
+  border-radius: 0.625rem;
+  padding: 1.25rem 1.5rem;
+  margin-bottom: 1.25rem;
+}
+
+.promotion-stats-bar {
+  display: flex;
+  gap: 1rem;
+  flex-wrap: wrap;
+  padding: 0.85rem 1.25rem;
+  background: #F6F8FC;
+  border: 1px solid #fed7d7;
+  border-radius: 0.5rem;
+  margin-bottom: 1rem;
+  align-items: center;
+}
+
+.promotion-stat-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.8125rem;
+  font-weight: 600;
+}
+
+/* Import Dropzone */
+.import-dropzone {
+  border: 2px dashed #cbd5e1;
+  border-radius: 0.625rem;
+  padding: 2.5rem 1.5rem;
+  text-align: center;
+  background: #f8fafc;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.import-dropzone:hover {
+  border-color: #3B82F6;
+  background: #F6F8FC;
+}
+
+.import-validation-box {
+  background: #ffffff;
+  border: 1px solid var(--color-sidebar-border, #f1e5e4);
+  border-radius: 0.625rem;
+  padding: 1.25rem;
+  margin-top: 1rem;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .class-teacher-banner {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  .promotion-stats-bar {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.5rem;
+  }
+}
+

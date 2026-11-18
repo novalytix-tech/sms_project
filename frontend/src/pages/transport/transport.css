@@ -1,0 +1,813 @@
+/* ========================================================
+   TRANSPORT & FLEET MANAGEMENT STYLESHEET
+   Crafted for School ERP — Human-Friendly Typography & Clean Design
+   ======================================================== */
+
+/* --- Page Header & Action Bar --- */
+.transport-container {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.transport-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+
+.transport-header-title h1 {
+  font-size: 24px;
+  font-weight: 800;
+  color: #0f172a;
+  margin: 0 0 4px 0;
+  letter-spacing: -0.01em;
+}
+
+.transport-header-title p {
+  font-size: 14px;
+  color: #64748b;
+  margin: 0;
+}
+
+.transport-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+/* --- Fleet KPI Stat Cards --- */
+.transport-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 16px;
+}
+
+.transport-stat-card {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 16px 18px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04);
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.transport-stat-card:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 10px rgba(15, 23, 42, 0.06);
+}
+
+.transport-stat-icon {
+  width: 46px;
+  height: 46px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.transport-stat-icon.crimson {
+  background: #fee2e2;
+  color: #3B82F6;
+}
+
+.transport-stat-icon.emerald {
+  background: #dcfce7;
+  color: #16a34a;
+}
+
+.transport-stat-icon.blue {
+  background: #eff6ff;
+  color: #2563eb;
+}
+
+.transport-stat-icon.amber {
+  background: #fffbeb;
+  color: #d97706;
+}
+
+.transport-stat-info {
+  display: flex;
+  flex-direction: column;
+}
+
+.transport-stat-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: #64748b;
+  margin-bottom: 2px;
+}
+
+.transport-stat-value {
+  font-size: 22px;
+  font-weight: 800;
+  color: #0f172a;
+  line-height: 1.2;
+}
+
+.transport-stat-subtext {
+  font-size: 12px;
+  color: #94a3b8;
+  margin-top: 2px;
+}
+
+/* --- Clean Navigation Tabs --- */
+.transport-tabs-nav {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  border-bottom: 1px solid #e2e8f0;
+  overflow-x: auto;
+  padding-bottom: 0;
+}
+
+.transport-tab-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 18px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #64748b;
+  background: transparent;
+  border: none;
+  border-bottom: 2px solid transparent;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  white-space: nowrap;
+}
+
+.transport-tab-item:hover {
+  color: #0f172a;
+  background: rgba(248, 250, 252, 0.8);
+}
+
+.transport-tab-item.active {
+  color: #3B82F6;
+  font-weight: 700;
+  border-bottom-color: #3B82F6;
+}
+
+.transport-tab-count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 12px;
+  background: #f1f5f9;
+  color: #475569;
+}
+
+.transport-tab-item.active .transport-tab-count {
+  background: #fee2e2;
+  color: #3B82F6;
+}
+
+/* --- Split View Map & Sidebar Layout --- */
+.fleet-split-layout {
+  display: grid;
+  grid-template-columns: 1fr 380px;
+  gap: 20px;
+  align-items: start;
+}
+
+@media (max-width: 1100px) {
+  .fleet-split-layout {
+    grid-template-columns: 1fr;
+  }
+}
+
+.fleet-map-container {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04);
+}
+
+.fleet-map-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 18px;
+  background: #f8fafc;
+  border-bottom: 1px solid #e2e8f0;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.fleet-route-select-group {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.fleet-route-select-group label {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: #475569;
+  white-space: nowrap;
+}
+
+.fleet-route-select {
+  height: 38px;
+  min-height: 38px;
+  padding: 0 32px 0 12px;
+  font-size: 13.5px;
+  font-weight: 600;
+  font-family: inherit;
+  color: #0f172a;
+  border: 1px solid var(--color-border, #E2E8F0);
+  border-radius: 8px;
+  background-color: #ffffff;
+  outline: none;
+  min-width: 240px;
+  cursor: pointer;
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%2364748b' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+  background-size: 14px 14px;
+  box-sizing: border-box;
+  transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+}
+
+.fleet-route-select:hover {
+  border-color: #BFDBFE;
+}
+
+.fleet-route-select:focus {
+  border-color: #3B82F6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.12);
+}
+
+/* --- Route & Telemetry Sidebar --- */
+.fleet-sidebar {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.fleet-panel-card {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04);
+  overflow: hidden;
+}
+
+.fleet-panel-header {
+  padding: 14px 18px;
+  border-bottom: 1px solid #f1f5f9;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: #fafaf9;
+}
+
+.fleet-panel-title {
+  font-size: 14px;
+  font-weight: 700;
+  color: #0f172a;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+}
+
+.fleet-panel-body {
+  padding: 16px 18px;
+}
+
+/* Key-value meta rows */
+.meta-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 0;
+  font-size: 13px;
+  border-bottom: 1px solid #f8fafc;
+}
+
+.meta-row:last-child {
+  border-bottom: none;
+  padding-bottom: 0;
+}
+
+.meta-label {
+  color: #64748b;
+  font-weight: 500;
+}
+
+.meta-val {
+  font-weight: 600;
+  color: #0f172a;
+}
+
+/* --- Route Stops Timeline --- */
+.stops-timeline {
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  padding-left: 12px;
+  margin-top: 6px;
+}
+
+.stops-timeline::before {
+  content: '';
+  position: absolute;
+  top: 14px;
+  bottom: 14px;
+  left: 22px;
+  width: 2px;
+  background: #e2e8f0;
+  z-index: 0;
+}
+
+.stop-item {
+  position: relative;
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 10px 0;
+  z-index: 1;
+}
+
+.stop-node {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: #ffffff;
+  border: 2px solid #94a3b8;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  font-weight: 700;
+  color: #64748b;
+  flex-shrink: 0;
+  margin-top: 2px;
+  transition: all 0.2s ease;
+}
+
+.stop-item.active .stop-node {
+  border-color: #3B82F6;
+  background: #3B82F6;
+  color: #ffffff;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
+}
+
+.stop-item.completed .stop-node {
+  border-color: #16a34a;
+  background: #16a34a;
+  color: #ffffff;
+}
+
+.stop-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.stop-header-line {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+}
+
+.stop-name {
+  font-size: 13px;
+  font-weight: 600;
+  color: #0f172a;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.stop-eta-pill {
+  font-size: 11px;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 6px;
+  background: #eff6ff;
+  color: #1d4ed8;
+  white-space: nowrap;
+}
+
+.stop-times {
+  font-size: 12px;
+  color: #64748b;
+  margin-top: 3px;
+}
+
+/* --- Route Cards Grid (Routes Tab) --- */
+.routes-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
+  gap: 18px;
+}
+
+.route-card {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04);
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.route-card:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 10px rgba(15, 23, 42, 0.06);
+}
+
+.route-card-header {
+  padding: 14px 18px;
+  border-bottom: 1px solid #f1f5f9;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.route-card-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.route-card-title h3 {
+  font-size: 16px;
+  font-weight: 800;
+  color: #0f172a;
+  margin: 0;
+}
+
+.route-card-body {
+  padding: 16px 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.route-progress-bar-container {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.route-progress-bar {
+  width: 100%;
+  height: 6px;
+  background: #f1f5f9;
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.route-progress-fill {
+  height: 100%;
+  border-radius: 3px;
+  transition: width 0.3s ease;
+}
+
+/* --- Table Enhancements --- */
+.transport-table-card {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04);
+}
+
+/* --- Status Pills --- */
+.status-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.status-pill.in-transit {
+  background: #dcfce7;
+  color: #15803d;
+}
+
+.status-pill.scheduled {
+  background: #eff6ff;
+  color: #1d4ed8;
+}
+
+.status-pill.arrived {
+  background: #f0fdf4;
+  color: #166534;
+  border: 1px solid #bbf7d0;
+}
+
+.status-pill.completed {
+  background: #f1f5f9;
+  color: #475569;
+}
+
+.status-pill.offline {
+  background: #fef2f2;
+  color: #b91c1c;
+}
+
+.status-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+.pulse-dot {
+  animation: pulse-glow 1.5s infinite;
+}
+
+@keyframes pulse-glow {
+  0% {
+    box-shadow: 0 0 0 0 rgba(22, 163, 74, 0.4);
+  }
+  70% {
+    box-shadow: 0 0 0 6px rgba(22, 163, 74, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(22, 163, 74, 0);
+  }
+}
+
+/* --- Parent / Student Commute Tracker --- */
+.commute-hero-card {
+  background: #ffffff;
+  border: 1px solid #fee2e2;
+  border-radius: 14px;
+  padding: 20px 24px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 16px;
+  box-shadow: 0 2px 6px rgba(59, 130, 246, 0.04);
+}
+
+.commute-hero-title {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.commute-hero-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+  background: #fee2e2;
+  color: #3B82F6;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+/* --- Clean Alert Feed --- */
+.alert-feed-item {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  padding: 16px 18px;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 14px;
+  transition: all 0.15s ease;
+}
+
+.alert-feed-item:hover {
+  box-shadow: 0 2px 6px rgba(15, 23, 42, 0.05);
+}
+
+.alert-feed-item.urgent {
+  border-left: 4px solid #ef4444;
+  background: #fffdfd;
+}
+
+.alert-feed-item.warning {
+  border-left: 4px solid #f59e0b;
+  background: #fffdfb;
+}
+
+.alert-feed-item.info {
+  border-left: 4px solid #3b82f6;
+  background: #fdfeff;
+}
+
+/* ========================================================
+   HUMAN-DESIGNED REAL-WORLD FLEET DISPATCH OPERATIONS
+   Mission Control Telemetry & Live Transit Architecture
+   ======================================================== */
+
+.transport-mission-header {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  padding: 18px 22px;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+.transport-breadcrumb-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: #64748b;
+  margin-bottom: 4px;
+}
+
+.transport-breadcrumb-item {
+  color: #64748b;
+  font-weight: 500;
+}
+
+.transport-breadcrumb-item.active {
+  color: #0f172a;
+  font-weight: 600;
+}
+
+.transport-breadcrumb-separator {
+  color: #cbd5e1;
+}
+
+.transport-mission-title h1 {
+  font-family: var(--font-family);
+  font-size: 20px;
+  font-weight: 700;
+  color: #0f172a;
+  letter-spacing: -0.02em;
+  margin: 4px 0 4px 0;
+}
+
+.transport-mission-title p {
+  font-size: 13px;
+  color: #475569;
+  margin: 0;
+  line-height: 1.4;
+}
+
+.transport-header-right-col {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+
+.transport-shift-card {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 8px 14px;
+}
+
+.transport-shift-indicator {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #16a34a;
+  position: relative;
+  flex-shrink: 0;
+}
+
+.transport-shift-pulse {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  background: #16a34a;
+  animation: ping 1.5s cubic-bezier(0, 0, 0.2, 1) infinite;
+  opacity: 0.75;
+}
+
+.transport-shift-details {
+  display: flex;
+  flex-direction: column;
+}
+
+.transport-shift-name {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: #0f172a;
+}
+
+.transport-shift-status {
+  font-size: 11px;
+  color: #64748b;
+}
+
+.transport-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* Enhanced Operations KPI Cards - Clean Unified Enterprise Design */
+.transport-operations-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 14px;
+  margin-bottom: 20px;
+}
+
+.transport-op-card {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  padding: 16px 18px;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04);
+  display: flex;
+  flex-direction: column;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.transport-op-card:hover {
+  border-color: #cbd5e1;
+  box-shadow: 0 3px 10px rgba(15, 23, 42, 0.06);
+}
+
+.transport-op-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.transport-op-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: #64748b;
+  letter-spacing: -0.01em;
+  text-transform: none;
+}
+
+.transport-op-icon-wrap {
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #475569;
+}
+
+.transport-op-value {
+  font-size: 26px;
+  font-weight: 700;
+  color: #0f172a !important;
+  line-height: 1.15;
+  margin-bottom: 4px;
+  letter-spacing: -0.02em;
+}
+
+.transport-op-subtext {
+  font-size: 13px;
+  font-weight: 500;
+  color: #64748b;
+  letter-spacing: 0;
+}
+
+.transport-op-footer {
+  font-size: 11.5px;
+  color: #64748b;
+  line-height: 1.35;
+}
+
+.transport-tab-count-alert {
+  background: #fee2e2 !important;
+  color: #b91c1c !important;
+}
+
+

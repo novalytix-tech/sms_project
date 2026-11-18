@@ -1,0 +1,118 @@
+/* =========================================================
+   School ERP Design System - Reference Alignment
+   Developed by NTS Novalytix
+   Blue (#3B82F6), Main Content (#F6F8FC), and Pure White Sidebar (#FFFFFF)
+   ========================================================= */
+
+:root {
+  /* Brand & Primary Accent - Blue */
+  --accent: #3B82F6;
+  --accent-dark: #1D4ED8;
+  --accent-soft: #EFF6FF;
+
+  --color-primary: #3B82F6;
+  --color-primary-hover: #2563EB;
+  --color-primary-dark: #1D4ED8;
+  --color-primary-light: #DBEAFE;
+  --color-primary-soft: #EFF6FF;
+  --color-primary-border: #BFDBFE;
+
+  /* Left Sidebar - Pure White Background & Blue Gradient Active Item */
+  --color-sidebar: #FFFFFF;
+  --color-sidebar-bg: #FFFFFF;
+  --color-sidebar-hover: #F8FAFC;
+  --color-sidebar-active: linear-gradient(135deg, #1D4ED8 0%, #3B82F6 60%, #60A5FA 100%);
+  --color-sidebar-text: #334155;
+  --color-sidebar-icon: #64748B;
+  --color-sidebar-text-active: #FFFFFF;
+  --color-sidebar-icon-active: #FFFFFF;
+  --color-sidebar-border: #E2E8F0;
+
+  /* Main Content Area Background (#F6F8FC) */
+  --color-page-background: #F6F8FC;
+  --color-bg-main: #F6F8FC;
+  --color-bg-card: #ffffff;
+  --color-bg-card-hover: #F8FAFC;
+  --color-bg-subtle: #EDF2F7;
+  --color-surface: #FFFFFF;
+
+  /* Typography Colors */
+  --color-text-main: #1E293B;
+  --color-text-primary: #1E293B;
+  --color-text-secondary: #64748B;
+  --color-text-muted: #94A3B8;
+  --color-text-inverted: #ffffff;
+  --color-eyebrow: #2563EB;
+
+  /* Status Colors (Subtle & Restrained) */
+  --color-success: #16A34A;
+  --color-success-bg: #e9f8ef;
+  --color-success-text: #16A34A;
+  --color-success-border: #bbf7d0;
+
+  --color-warning: #D97706;
+  --color-warning-bg: #fff3dd;
+  --color-warning-text: #D97706;
+  --color-warning-border: #fed7aa;
+
+  --color-danger: #DC2626;
+  --color-danger-bg: #FEF2F2;
+  --color-danger-text: #DC2626;
+  --color-danger-border: #fecaca;
+
+  --color-info: #0284c7;
+  --color-info-bg: #eff6ff;
+  --color-info-text: #0284c7;
+  --color-info-border: #bfdbfe;
+
+  --color-purple: #702e82;
+  --color-purple-bg: #f9edf9;
+  --color-purple-text: #702e82;
+
+  /* Borders & Shadows */
+  --color-border: #E2E8F0;
+  --color-border-subtle: #F1F5F9;
+  --color-border-focus: #3B82F6;
+
+  --shadow-sm: 0 1px 3px rgba(59, 130, 246, 0.04);
+  --shadow-md: 0 4px 16px rgba(59, 130, 246, 0.06);
+  --shadow-lg: 0 8px 28px rgba(59, 130, 246, 0.08);
+  --shadow-xl: 0 16px 40px rgba(59, 130, 246, 0.12);
+
+  /* Spacing */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-10: 40px;
+
+  /* Border Radii - Disciplined Enterprise Scale */
+  --radius-xs: 4px;
+  --radius-sm: 6px;
+  --radius-md: 8px;
+  --radius-lg: 10px;
+  --radius-xl: 12px;
+  --radius-full: 9999px;
+
+  /* Dimensions */
+  --sidebar-width: 250px;
+  --sidebar-collapsed-width: 72px;
+  --topbar-height: 64px;
+
+  /* Transitions */
+  --transition-fast: 150ms ease;
+  --transition-normal: 220ms ease;
+
+  /* Typography Stack */
+  --font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+  --font-size-xs: 0.75rem;
+  --font-size-sm: 0.84rem;
+  --font-size-base: 0.93rem;
+  --font-size-lg: 1.05rem;
+  --font-size-xl: 1.2rem;
+  --font-size-2xl: 1.45rem;
+  --font-size-3xl: 1.85rem;
+}

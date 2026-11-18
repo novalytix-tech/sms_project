@@ -1,0 +1,140 @@
+%% ========================================================
+%% SCHOOL ERP — SERVICE DATA FLOW & COMPONENT TRACE
+%% File: docs/architecture/service-data-flow.mmd
+%% Generated for: D:\SMS (Read-Only Architectural Audit)
+%% ========================================================
+
+sequenceDiagram
+    autonumber
+
+    %% ==========================================
+    %% FLOW 1: STUDENT SUBMITS HOMEWORK
+    %% ==========================================
+    rect rgb(245, 247, 250)
+    Note over Student, Storage: FLOW 1: Student Submits Homework Workflow
+    actor Student as Student User
+    participant HWPage as HomeworkPage.tsx<br/>(src/pages/HomeworkPage.tsx)
+    participant SubModal as SubmitHomeworkModal.tsx<br/>(src/components/homework/SubmitHomeworkModal.tsx)
+    participant HWService as assignmentService.ts<br/>(src/services/assignmentService.ts)
+    participant ERPContext as ERPContext.tsx<br/>(src/context/ERPContext.tsx)
+    participant Storage as ERPStorage / localStorage<br/>(src/services/storage.ts)
+
+    Student->>HWPage: Clicks "Submit Work" on pending assignment
+    HWPage->>SubModal: Opens modal with assignmentId, title, maxScore, dueDate
+    Student->>SubModal: Enters submission text & selects file attachment
+    Student->>SubModal: Clicks "Turn In / Submit"
+    SubModal->>HWService: submitHomework(assignmentId, studentId, studentName, submissionText, attachments)
+    activate HWService
+    HWService->>HWService: Validates deadline & non-empty content
+    HWService->>HWService: Creates AssignmentSubmission record (status: 'submitted', timestamp: Date.now())
+    HWService->>ERPContext: updateAssignmentSubmission(assignmentId, submissionRecord)
+    ERPContext->>Storage: ERPStorage.save({ assignments: updatedAssignments })
+    Storage-->>ERPContext: Synchronous write to 'nts_novalytix_school_erp_store_v1'
+    ERPContext-->>HWService: State updated
+    HWService-->>SubModal: Returns success response
+    deactivate HWService
+    SubModal->>HWPage: Emits onSuccess callback & triggers toast notification ("Assignment submitted successfully")
+    SubModal-->>Student: Closes submission modal
+    HWPage->>Student: Renders updated badge: "Submitted - Awaiting Evaluation"
+    end
+
+    %% ==========================================
+    %% FLOW 2: TEACHER SAVES CLASS ATTENDANCE
+    %% ==========================================
+    rect rgb(255, 250, 240)
+    Note over Teacher, Storage: FLOW 2: Teacher Marks & Saves Class Attendance
+    actor Teacher as Class Teacher
+    participant AttPage as AttendancePage.tsx<br/>(src/pages/AttendancePage.tsx)
+    participant AttService as attendanceService.ts<br/>(src/services/attendanceService.ts)
+    participant ClassService as classManagementService.ts<br/>(src/services/classManagementService.ts)
+
+    Teacher->>AttPage: Selects Date (YYYY-MM-DD), Class (e.g. Class 10), Section (A)
+    AttPage->>ClassService: getStudentsByClass(classId, section)
+    ClassService-->>AttPage: Returns enrolled student roster for active academic session
+    AttPage->>AttService: getAttendanceForClass(classId, section, date)
+    AttService-->>AttPage: Returns existing records (or empty array if unmarked)
+    AttPage-->>Teacher: Displays student roster with default status pills (Present/Absent/Late)
+    Teacher->>AttPage: Toggles student statuses, adds remarks for absences
+    Teacher->>AttPage: Clicks "Save Attendance"
+    AttPage->>AttService: saveBatchAttendance(classId, section, date, attendanceRecords, teacherId)
+    activate AttService
+    AttService->>AttService: Validates no duplicate records for (studentId, date)
+    AttService->>AttService: Resolves approved leave requests & audit overrides
+    AttService->>ERPContext: updateAttendanceRecords(classId, section, date, validatedRecords)
+    ERPContext->>Storage: ERPStorage.save({ attendance: updatedAttendanceList })
+    Storage-->>ERPContext: Persisted to browser LocalStorage
+    ERPContext-->>AttService: React state updated across listening components
+    deactivate AttService
+    AttPage-->>Teacher: Displays success toast ("Attendance recorded for 32 students")
+    AttPage->>Teacher: Re-renders presence summary (e.g. "93.7% Attendance Rate")
+    end
+
+    %% ==========================================
+    %% FLOW 3: ADMIN PROMOTES STUDENTS TO NEXT SESSION
+    %% ==========================================
+    rect rgb(240, 253, 244)
+    Note over Admin, Storage: FLOW 3: Academic Promotion Execution Workflow
+    actor Admin as School Administrator
+    participant ClassPage as ClassManagementPage.tsx<br/>(src/pages/ClassManagementPage.tsx)
+    participant PromService as promotionService.ts<br/>(src/services/promotionService.ts)
+
+    Admin->>ClassPage: Selects Tab: "Academic Promotion"
+    Admin->>ClassPage: Chooses Source Session ("2026-2027"), Target Session ("2027-2028")
+    Admin->>ClassPage: Selects Source Class ("Class 9-A") & Destination Class ("Class 10-A")
+    ClassPage->>PromService: previewPromotionEligibility(sourceClassId, sourceSessionId)
+    activate PromService
+    PromService->>PromService: Evaluates Exam Mark averages against GradingScheme criteria
+    PromService->>PromService: Checks minimum attendance percentage threshold (>75%)
+    PromService->>PromService: Verifies fee clearance status from fee invoices
+    PromService-->>ClassPage: Returns student list with computed flags: "Eligible" / "Review Needed" / "Retained"
+    deactivate PromService
+    ClassPage-->>Admin: Renders review table with bulk checkboxes & override controls
+    Admin->>ClassPage: Confirms student promotions and clicks "Execute Promotion"
+    ClassPage->>PromService: executeClassPromotion(sourceClassId, destClassId, sourceSessionId, destSessionId, decisions, adminId)
+    activate PromService
+    PromService->>PromService: Creates PromotionBatch audit log in promotionBatches collection
+    PromService->>PromService: Marks source StudentEnrollment records as 'promoted'
+    PromService->>PromService: Generates new active StudentEnrollment records in target session & class
+    PromService->>PromService: Updates Student primary record (classId, className, section, academicYear)
+    PromService->>ERPContext: commitPromotionBatch(newBatch, updatedEnrollments, updatedStudents)
+    ERPContext->>Storage: ERPStorage.save({ promotionBatches, studentEnrollments, students })
+    Storage-->>ERPContext: Persists immutable audit records and new active enrollments
+    ERPContext-->>PromService: Storage committed
+    deactivate PromService
+    ClassPage-->>Admin: Displays modal summary: "Successfully promoted 34 students to Class 10-A"
+    ClassPage->>Admin: Refreshes active class enrollment counts
+    end
+
+    %% ==========================================
+    %% FLOW 4: PARENT MONITORS CHILD'S SCHOOL BUS
+    %% ==========================================
+    rect rgb(254, 242, 242)
+    Note over Parent, Storage: FLOW 4: Parent Views Real-Time Bus Location & Alerts
+    actor Parent as Parent User
+    participant TransPage as TransportPage.tsx<br/>(src/pages/TransportPage.tsx)
+    participant TransMap as TransportMap.tsx<br/>(src/components/transport/TransportMap.tsx)
+    participant TransService as transportService.ts<br/>(src/services/transportService.ts)
+
+    Parent->>TransPage: Navigates to "/transport"
+    TransPage->>TransPage: Inspects currentUser.role ('parent') & identifies linked child studentId
+    TransPage->>TransService: getStudentTransportAssignment(childStudentId)
+    TransService-->>TransPage: Returns { transportRouteId: 'route-1', busStop: 'Green Park Metro', optIn: true }
+    Note right of TransPage: Strict isolation: Non-opted students receive 'Transport Facility Not Opted' screen
+    TransPage->>TransService: getRouteDetails('route-1')
+    TransService-->>TransPage: Returns route path coordinates, stop schedule, driver/attendant contact
+    TransPage->>TransMap: Initializes Leaflet map with route polyline & bus stops
+    loop Telemetry Refresh Interval (Every 5 seconds in simulation mode)
+        TransMap->>TransService: getLatestBusLocation('route-1')
+        TransService->>TransService: simulateStepAlongRoute(routeId) / Reads transportLocations collection
+        TransService-->>TransMap: Returns { latitude, longitude, speed, timestamp, isLive }
+        TransMap->>TransMap: Updates animated bus marker position on map canvas
+        TransMap->>TransService: calculateETA(busCoords, studentStopCoords, speed)
+        TransService-->>TransMap: Returns estimated arrival (e.g. "ETA: 8 mins")
+        TransMap->>TransMap: Checks geofence proximity (distance < 250m)
+        opt Proximity Trigger
+            TransMap-->>Parent: Displays alert badge: "Bus Approaching Your Stop"
+        end
+    end
+    TransMap-->>Parent: Displays live interactive tracking, bus speed, driver phone, and ETA countdown
+    end
+
