@@ -1,7 +1,8 @@
 import uuid
 from datetime import date, datetime
-from flask import Blueprint, request, jsonify
-from flask_jwt_extended import get_jwt_identity, verify_jwt_in_request
+from flask import g, Blueprint, request, jsonify
+from app.auth import ADMIN, STAFF, role_required
+from app.utils.tenant import ensure_same_tenant
 from app.extensions import db
 from app.models import StudentAttendance, StaffAttendance, StudentEnrollment, User
 from app.utils.tenant import get_current_tenant_id
@@ -15,6 +16,7 @@ attendance_bp = Blueprint("attendance", __name__, url_prefix="/attendance")
 # -------------------------------------------------------------
 
 @attendance_bp.route("/students", methods=["GET"])
+@role_required(*STAFF)
 def get_student_attendance():
     date_str = request.args.get("date")
     section_id = request.args.get("section_id")
@@ -45,6 +47,7 @@ def get_student_attendance():
 
 
 @attendance_bp.route("/students/batch", methods=["POST"])
+@role_required(*STAFF)
 def record_student_attendance_batch():
     """Bulk mark attendance for an entire classroom section."""
     payload = request.get_json() or {}
@@ -52,18 +55,7 @@ def record_student_attendance_batch():
     date_str = payload.get("date")
     att_date = datetime.strptime(str(date_str)[:10], "%Y-%m-%d").date() if date_str else date.today()
 
-    recorded_by_id = None
-    # Find active teacher / recorder user
-    verify_jwt_in_request(optional=True)
-    current_uid = get_jwt_identity()
-    if current_uid:
-        recorded_by_id = uuid.UUID(str(current_uid))
-    else:
-        recorder = User.query.filter_by(is_active=True).first()
-        recorded_by_id = recorder.id if recorder else None
-
-    if not recorded_by_id:
-        raise APIException("Recorder user identity required", status_code=400)
+    recorded_by_id = g.user_id
 
     results = []
     for item in items:
@@ -81,6 +73,10 @@ def record_student_attendance_batch():
             continue
 
         e_uuid = uuid.UUID(str(enrollment_id_str))
+        enrollment = db.session.get(StudentEnrollment, e_uuid)
+        if not enrollment:
+            continue
+        ensure_same_tenant(enrollment.student.institution_id)
         status = item.get("status", "PRESENT").upper()
 
         existing = StudentAttendance.query.filter_by(
@@ -117,6 +113,7 @@ def record_student_attendance_batch():
 # -------------------------------------------------------------
 
 @attendance_bp.route("/staff", methods=["GET"])
+@role_required(*ADMIN)
 def get_staff_attendance():
     institution_id = get_current_tenant_id()
     date_str = request.args.get("date")

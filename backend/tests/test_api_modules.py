@@ -99,6 +99,7 @@ def test_admissions_workflow(client, auth_headers):
 
     # 1. Create Inquiry
     inq_res = client.post("/api/v1/admissions/inquiries", json={
+        "institution_code": "STXAV-DELHI",
         "first_name": "Amit",
         "last_name": "Sharma",
         "phone_number": "+91 98111 55667",
@@ -332,9 +333,8 @@ def test_communications_notices_and_messages(client, auth_headers):
     assert any("Sports Meet" in n["title"] for n in notices)
 
 
-def test_sync_store_hydration(client):
-    # Public / seed store hydration
-    res = client.get("/api/v1/sync/store")
+def test_sync_store_hydration(client, auth_headers):
+    res = client.get("/api/v1/sync/store", headers=auth_headers("principal@stxaviers.edu.in"))
     assert res.status_code == 200
     data = res.get_json()["data"]
     assert "institutions" in data

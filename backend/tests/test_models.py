@@ -64,8 +64,7 @@ def test_user_roles_and_all_personas(session):
         user = User(
             institution_id=inst.id if r_name != Role.SUPER_ADMIN else None,
             username=f"user_{r_name}_{uid}",
-            email=f"{r_name}_{uid}@test.edu",
-            password_hash="argon2_sample_hash",
+            email=f"{r_name}_{uid}@test.edu", 
             first_name="Test",
             last_name=r_name.capitalize(),
         )
@@ -89,8 +88,7 @@ def test_dual_role_teacher_librarian(session):
     user = User(
         institution_id=inst.id,
         username=f"teacher_lib_{uid}",
-        email=f"teacher_lib_{uid}@test.edu",
-        password_hash="hash",
+        email=f"teacher_lib_{uid}@test.edu", 
         first_name="Sunita",
         last_name="Verma"
     )
@@ -154,7 +152,7 @@ def test_academic_hierarchy_relationships(session):
     session.add(cs)
     session.flush()
 
-    teacher = User(institution_id=inst.id, username=f"t_{uid}", email=f"t_{uid}@test.edu", password_hash="h", first_name="A", last_name="B")
+    teacher = User(institution_id=inst.id, username=f"t_{uid}", email=f"t_{uid}@test.edu",  first_name="A", last_name="B")
     session.add(teacher)
     session.flush()
 

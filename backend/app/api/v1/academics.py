@@ -1,6 +1,8 @@
 import uuid
 from datetime import date, time, datetime
-from flask import Blueprint, request, jsonify
+from flask import g, Blueprint, request, jsonify
+from app.auth import ADMIN, ANY_MEMBER, STAFF, role_required
+from app.utils.tenant import ensure_same_tenant
 from app.extensions import db
 from app.models import (
     AcademicYear, Term, ClassLevel, Section, Subject, ClassSubject,
@@ -17,6 +19,7 @@ academics_bp = Blueprint("academics", __name__, url_prefix="/academics")
 # -------------------------------------------------------------
 
 @academics_bp.route("/sessions", methods=["GET"])
+@role_required(*ANY_MEMBER)
 def list_sessions():
     institution_id = get_current_tenant_id()
     query = AcademicYear.query
@@ -48,6 +51,7 @@ def list_sessions():
 
 
 @academics_bp.route("/sessions", methods=["POST"])
+@role_required(*ADMIN)
 def create_session():
     institution_id = get_current_tenant_id(required=True)
     payload = request.get_json() or {}
@@ -95,6 +99,7 @@ def create_session():
 # -------------------------------------------------------------
 
 @academics_bp.route("/classes", methods=["GET"])
+@role_required(*ANY_MEMBER)
 def list_classes():
     institution_id = get_current_tenant_id()
     query = ClassLevel.query
@@ -132,6 +137,7 @@ def list_classes():
 
 
 @academics_bp.route("/classes", methods=["POST"])
+@role_required(*ADMIN)
 def create_class():
     institution_id = get_current_tenant_id(required=True)
     payload = request.get_json() or {}
@@ -177,10 +183,12 @@ def create_class():
 
 
 @academics_bp.route("/sections/<uuid:section_id>", methods=["GET"])
+@role_required(*STAFF)
 def get_section(section_id):
     sec = Section.query.filter_by(id=section_id).first()
     if not sec:
         raise APIException("Section not found", status_code=404)
+    ensure_same_tenant(sec.class_level.institution_id)
 
     return jsonify({
         "success": True,
@@ -209,6 +217,7 @@ def get_section(section_id):
 # -------------------------------------------------------------
 
 @academics_bp.route("/subjects", methods=["GET"])
+@role_required(*ANY_MEMBER)
 def list_subjects():
     institution_id = get_current_tenant_id()
     query = Subject.query
@@ -230,6 +239,7 @@ def list_subjects():
 
 
 @academics_bp.route("/subjects", methods=["POST"])
+@role_required(*ADMIN)
 def create_subject():
     institution_id = get_current_tenant_id(required=True)
     payload = request.get_json() or {}
@@ -272,6 +282,7 @@ def create_subject():
 # -------------------------------------------------------------
 
 @academics_bp.route("/timetable", methods=["GET"])
+@role_required(*ANY_MEMBER)
 def get_timetable():
     institution_id = get_current_tenant_id()
     section_id = request.args.get("section_id")

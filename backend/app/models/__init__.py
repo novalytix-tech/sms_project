@@ -1,6 +1,6 @@
 from app.models.base import BaseModel, TenantModel
 from app.models.institution import Institution, ServiceEntitlement, InstitutionSetting
-from app.models.user import User, Role, Permission, UserRole, RolePermission, TokenBlocklist, PasswordReset
+from app.models.user import User, Role, Permission, UserRole, RolePermission
 from app.models.academic import (
     AcademicYear, Term, Room, ClassLevel, Section, Subject, ClassSubject, TeacherAssignment
 )
@@ -47,8 +47,6 @@ __all__ = [
     "Permission",
     "UserRole",
     "RolePermission",
-    "TokenBlocklist",
-    "PasswordReset",
     "AcademicYear",
     "Term",
     "Room",

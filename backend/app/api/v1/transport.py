@@ -1,7 +1,9 @@
 import uuid
 from datetime import date, time, datetime
 from decimal import Decimal
-from flask import Blueprint, request, jsonify
+from flask import g, Blueprint, request, jsonify
+from app.auth import ANY_MEMBER, role_required
+from app.utils.tenant import ensure_same_tenant
 from app.extensions import db
 from app.models import (
     TransportRoute, TransportStop, TransportVehicle,
@@ -18,6 +20,7 @@ transport_bp = Blueprint("transport", __name__, url_prefix="/transport")
 # -------------------------------------------------------------
 
 @transport_bp.route("/routes", methods=["GET"])
+@role_required(*ANY_MEMBER)
 def list_routes():
     institution_id = get_current_tenant_id()
     query = TransportRoute.query
@@ -52,6 +55,7 @@ def list_routes():
 
 
 @transport_bp.route("/vehicles", methods=["GET"])
+@role_required(*ANY_MEMBER)
 def list_vehicles():
     institution_id = get_current_tenant_id()
     query = TransportVehicle.query
@@ -78,6 +82,7 @@ def list_vehicles():
 
 
 @transport_bp.route("/trips/active", methods=["GET"])
+@role_required(*ANY_MEMBER)
 def get_active_trips():
     trips = TransportTrip.query.filter_by(status="IN_TRANSIT").all()
     data = [

@@ -2,17 +2,17 @@ import os
 import time
 import uuid
 import secrets
-from concurrent.futures import ThreadPoolExecutor
 from datetime import date, datetime, timezone
 from flask import Blueprint, request, jsonify, current_app
-from flask_jwt_extended import jwt_required, get_jwt
 from sqlalchemy import or_, and_, insert as sa_insert
 from app.extensions import db
 from app.models import (
     Student, Parent, StudentParent, StudentEnrollment, StudentPromotion,
     ClassLevel, Section, AcademicYear, User
 )
-from app.utils.decorators import role_required, permission_required
+from app.auth import ADMIN, STAFF, role_required
+from app.utils.decorators import verify_parent_access
+from flask import g
 from app.utils.tenant import get_current_tenant_id
 from app.utils.errors import APIException
 
@@ -114,19 +114,9 @@ def _serialize_student(student: Student, full: bool = False):
 
 
 @students_bp.route("", methods=["GET"])
+@role_required(*STAFF)
 def list_students():
     """List students with search, section filter, pagination, and sorting."""
-    if not current_app.config.get("DATABASE_ENABLED", False):
-        from app.api.v1.sync import _get_fallback_store
-        fb = _get_fallback_store()
-        return jsonify({
-            "success": True,
-            "data": fb.get("students", []),
-            "total": len(fb.get("students", [])),
-            "page": 1,
-            "per_page": 50,
-        }), 200
-
     institution_id = get_current_tenant_id()
     query = Student.query
 
@@ -177,6 +167,7 @@ def list_students():
 
 
 @students_bp.route("/<uuid:student_id>", methods=["GET"])
+@role_required(*STAFF, "parent", "student")
 def get_student(student_id):
     """Retrieve detailed student profile."""
     institution_id = get_current_tenant_id()
@@ -187,6 +178,13 @@ def get_student(student_id):
     student = query.first()
     if not student:
         raise APIException("Student record not found", status_code=404, error_code="STUDENT_NOT_FOUND")
+
+    roles = g.roles
+    if not roles & {"super_admin", "school_admin", "teacher"}:
+        if "parent" in roles:
+            verify_parent_access(student.id)
+        elif student.user_id != g.user_id:
+            raise APIException("Student record not found", status_code=404, error_code="STUDENT_NOT_FOUND")
 
     return jsonify({
         "success": True,
@@ -232,33 +230,18 @@ def _import_lookups(institution_id):
     return value
 
 
-def _gen_temp_password() -> str:
-    chars = "ABCDEFGHJKLMNPQRSTUVWXYZ"
-    nums = "23456789"
-    special = "!@#$"
-    return (
-        "".join(secrets.choice(chars) for _ in range(4))
-        + "#"
-        + "".join(secrets.choice(nums) for _ in range(3))
-        + secrets.choice(special)
-    )
-
-
 @students_bp.route("/bulk-import", methods=["POST"])
+@role_required(*ADMIN)
 def bulk_import_students():
     """
     Bulk-create students from imported rows.
 
     Performance: every lookup is pre-loaded in a fixed number of queries and all
     uniqueness checks run in memory, primary keys are generated client-side so no
-    per-row FLUSH is needed, password hashing runs on a thread pool, and the whole
+    per-row FLUSH is needed, and the whole
     batch is written in a single COMMIT. Cost is O(1) round-trips, not O(rows).
     """
-    if not current_app.config.get("DATABASE_ENABLED", False):
-        raise APIException("Database is not enabled.", status_code=503, error_code="DATABASE_UNAVAILABLE")
-
-    from app.utils.security import hash_temp_password
-    from app.models.user import Role, UserRole
+    from app.models.user import UserRole
 
     institution_id = get_current_tenant_id(required=True)
     body = request.get_json(silent=True) or {}
@@ -345,23 +328,14 @@ def bulk_import_students():
             "address": row.get("address") or "",
         })
 
-    # ---------- Hash every temporary password in parallel ----------
-    passwords = [_gen_temp_password() for _ in prepared]
-    if passwords:
-        workers = min(8, (os.cpu_count() or 4))
-        with ThreadPoolExecutor(max_workers=workers) as pool:
-            hashes = list(pool.map(hash_temp_password, passwords))
-    else:
-        hashes = []
-
     # ---------- Build plain dicts, then write each table in ONE multi-row INSERT ----------
     today = date.today()
     now = datetime.now(timezone.utc)
     base = {"is_deleted": False, "created_at": now, "updated_at": now}
     user_rows, role_rows, student_rows, enroll_rows = [], [], [], []
-    created, credentials = [], []
+    created = []
 
-    for p, plain_pw, pw_hash in zip(prepared, passwords, hashes):
+    for p in prepared:
         user_id = uuid.uuid4()
         student_id = uuid.uuid4()
 
@@ -371,13 +345,11 @@ def bulk_import_students():
             "institution_id": institution_id,
             "username": p["username"],
             "email": p["email"],
-            "password_hash": pw_hash,
             "first_name": p["first_name"],
             "last_name": p["last_name"],
             "phone": p["phone"],
             "is_active": True,
             "is_verified": True,
-            "must_change_password": True,
         })
         if student_role_id:
             role_rows.append({
@@ -436,15 +408,6 @@ def bulk_import_students():
             "address": p["address"],
             "status": "active",
         })
-        credentials.append({
-            "name": p["full_name"],
-            "admissionNo": p["admission_no"],
-            "className": p["class_name"],
-            "section": p["section"],
-            "loginId": p["username"],
-            "temporaryPassword": plain_pw,
-        })
-
     # ---------- One multi-row INSERT per table, then a single COMMIT ----------
     try:
         if user_rows:
@@ -456,10 +419,11 @@ def bulk_import_students():
         if enroll_rows:
             db.session.execute(sa_insert(StudentEnrollment), enroll_rows)
         db.session.commit()
-    except Exception as exc:
+    except Exception:
         db.session.rollback()
+        current_app.logger.exception("Student bulk import failed")
         raise APIException(
-            "Database rejected the batch: " + str(exc).splitlines()[0][:160],
+            "The batch could not be saved. Check for duplicate or invalid values.",
             status_code=400,
             error_code="IMPORT_DB_ERROR",
         )
@@ -468,7 +432,6 @@ def bulk_import_students():
         "success": True,
         "data": {
             "created": created,
-            "credentials": credentials,
             "imported": len(created),
             "skipped": len(errors),
             "errors": errors,
@@ -479,24 +442,9 @@ def bulk_import_students():
 
 
 @students_bp.route("", methods=["POST"])
+@role_required(*ADMIN)
 def create_student():
     """Create a new student with enrollment and optional user account."""
-    if not current_app.config.get("DATABASE_ENABLED", False):
-        payload = request.get_json() or {}
-        adm_no = payload.get("admission_number") or payload.get("admissionNo") or f"ADM-2026-{int(datetime.now().timestamp())}"
-        first_name = payload.get("first_name") or payload.get("firstName") or "Student"
-        last_name = payload.get("last_name") or payload.get("lastName") or ""
-        return jsonify({
-            "success": True,
-            "data": {
-                "id": str(uuid.uuid4()),
-                "admission_number": adm_no,
-                "first_name": first_name,
-                "last_name": last_name,
-            },
-            "message": "Student created in local mock runtime (Database disconnected)."
-        }), 201
-
     institution_id = get_current_tenant_id(required=True)
     payload = request.get_json() or {}
 
@@ -529,7 +477,6 @@ def create_student():
     if email:
         user_obj = User.query.filter_by(email=email.lower().strip()).first()
         if not user_obj:
-            from app.utils.security import hash_password
             from app.models.user import Role, UserRole
             clean_email = email.lower().strip()
             username = clean_email.split('@')[0]
@@ -542,7 +489,6 @@ def create_student():
                 institution_id=institution_id,
                 username=username,
                 email=clean_email,
-                password_hash=hash_password("SchoolERP@Demo2026!"),
                 first_name=first_name,
                 last_name=last_name,
                 phone=payload.get("phone") or payload.get("phone_number"),
@@ -582,6 +528,13 @@ def create_student():
         if not active_year:
             active_year = AcademicYear.query.filter_by(institution_id=institution_id).first()
 
+        section = (
+            Section.query.join(ClassLevel, Section.class_level_id == ClassLevel.id)
+            .filter(Section.id == uuid.UUID(str(section_id)), ClassLevel.institution_id == institution_id)
+            .first()
+        )
+        if not section:
+            raise APIException("Section not found.", status_code=404, error_code="SECTION_NOT_FOUND")
         if active_year:
             enrollment = StudentEnrollment(
                 student_id=student.id,
@@ -603,14 +556,9 @@ def create_student():
 
 
 @students_bp.route("/<uuid:student_id>", methods=["PUT", "PATCH"])
+@role_required(*ADMIN)
 def update_student(student_id):
     """Update student profile attributes."""
-    if not current_app.config.get("DATABASE_ENABLED", False):
-        return jsonify({
-            "success": True,
-            "message": "Student updated in local mock runtime (Database disconnected)."
-        }), 200
-
     institution_id = get_current_tenant_id()
     query = Student.query.filter_by(id=student_id)
     if institution_id:
@@ -655,6 +603,7 @@ def update_student(student_id):
 
 
 @students_bp.route("/<uuid:student_id>", methods=["DELETE"])
+@role_required(*ADMIN)
 def delete_student(student_id):
     """Soft-delete / withdraw a student record."""
     institution_id = get_current_tenant_id()

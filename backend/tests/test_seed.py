@@ -1,12 +1,9 @@
-from argon2 import PasswordHasher
 from app.models import User, Institution, Role, Student
 from seed import seed_database, STUDENTS_DATA
 
-ph = PasswordHasher()
-
 
 def test_seed_idempotency_and_personas(app):
-    """Verify seed execution, presence of personas, 30 students, and Argon2 password hashing."""
+    """Verify seed execution, presence of personas, 30 students, and that no passwords are stored."""
     with app.app_context():
         # Execute seed on test app database
         seed_database(app)
@@ -38,8 +35,7 @@ def test_seed_idempotency_and_personas(app):
             user = User.query.filter_by(email=email).first()
             assert user is not None, f"Missing seed user: {email}"
             assert expected_role in user.role_names, f"User {email} missing role {expected_role}"
-            # Verify Argon2id password hashing prefix
-            assert user.password_hash.startswith("$argon2id$")
+            assert not hasattr(user, "password_hash")
 
         # Verify exactly all 30 students from the fresh dataset are seeded
         seeded_adms = [s["adm_no"] for s in STUDENTS_DATA]

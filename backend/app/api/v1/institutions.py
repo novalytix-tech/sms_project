@@ -1,5 +1,7 @@
 import uuid
-from flask import Blueprint, request, jsonify
+from flask import g, Blueprint, request, jsonify
+from app.auth import ADMIN, ANY_MEMBER, role_required
+from app.utils.tenant import ensure_same_tenant
 from app.extensions import db
 from app.models import Institution, InstitutionSetting, ServiceEntitlement
 from app.utils.tenant import get_current_tenant_id
@@ -9,6 +11,7 @@ institutions_bp = Blueprint("institutions", __name__, url_prefix="/institutions"
 
 
 @institutions_bp.route("/current", methods=["GET"])
+@role_required(*ANY_MEMBER)
 def get_current_institution():
     institution_id = get_current_tenant_id()
     inst = Institution.query.filter_by(id=institution_id).first()
@@ -45,6 +48,7 @@ def get_current_institution():
 
 
 @institutions_bp.route("/current/settings", methods=["PUT"])
+@role_required(*ADMIN)
 def update_institution_settings():
     institution_id = get_current_tenant_id(required=True)
     inst = Institution.query.filter_by(id=institution_id).first()

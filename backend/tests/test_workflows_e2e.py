@@ -56,6 +56,7 @@ def test_workflow_a_admission_to_enrollment(client, auth_headers):
 
     # 1. Create Enquiry
     inq_res = client.post("/api/v1/admissions/inquiries", json={
+        "institution_code": "STXAV-DELHI",
         "first_name": "Aarav",
         "last_name": "Mehta",
         "phone_number": "+91 98333 11224",
@@ -386,7 +387,7 @@ def test_workflow_f_library_circulation_and_fines(client, auth_headers):
     b_data = b_res.get_json()["data"][0]
     copy_id = b_data["copies"][0]["id"]
 
-    user = User.query.filter_by(is_active=True).first()
+    user = User.query.filter_by(email="aarav.sharma@student.stxaviers.edu.in").first()
 
     # 3. Issue Loan
     issue_res = client.post("/api/v1/library/loans/issue", json={

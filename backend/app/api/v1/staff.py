@@ -1,7 +1,8 @@
 import uuid
 from datetime import date, datetime
-from flask import Blueprint, request, jsonify
-from flask_jwt_extended import get_jwt_identity
+from flask import g, Blueprint, request, jsonify
+from app.auth import ADMIN, STAFF, role_required
+from app.utils.tenant import ensure_same_tenant
 from app.extensions import db
 from app.models import StaffProfile, TeacherProfile, Department, LeaveRequest, LeaveCategory, LeaveApproval, User
 from app.utils.tenant import get_current_tenant_id
@@ -15,6 +16,7 @@ staff_bp = Blueprint("staff", __name__, url_prefix="/staff")
 # -------------------------------------------------------------
 
 @staff_bp.route("", methods=["GET"])
+@role_required(*STAFF)
 def list_staff():
     institution_id = get_current_tenant_id()
     query = StaffProfile.query
@@ -48,6 +50,7 @@ def list_staff():
 
 
 @staff_bp.route("/departments", methods=["GET"])
+@role_required(*STAFF)
 def list_departments():
     institution_id = get_current_tenant_id()
     query = Department.query
@@ -64,6 +67,7 @@ def list_departments():
 # -------------------------------------------------------------
 
 @staff_bp.route("/leaves", methods=["GET"])
+@role_required(*STAFF)
 def list_leaves():
     institution_id = get_current_tenant_id()
     query = LeaveRequest.query
@@ -93,20 +97,19 @@ def list_leaves():
 
 
 @staff_bp.route("/leaves/<uuid:leave_id>/action", methods=["PUT"])
+@role_required(*ADMIN)
 def take_leave_action(leave_id):
     leave = LeaveRequest.query.filter_by(id=leave_id).first()
     if not leave:
         raise APIException("Leave request not found", status_code=404)
+    ensure_same_tenant(leave.institution_id)
 
     payload = request.get_json() or {}
     action = payload.get("action", "").upper()  # APPROVED, REJECTED
     if action not in {"APPROVED", "REJECTED"}:
         raise APIException("Action must be either APPROVED or REJECTED", status_code=400)
 
-    approver_id = get_jwt_identity()
-    if not approver_id:
-        u = User.query.filter_by(is_active=True).first()
-        approver_id = str(u.id) if u else None
+    approver_id = str(g.user_id)
 
     leave.status = action
     approval = LeaveApproval(

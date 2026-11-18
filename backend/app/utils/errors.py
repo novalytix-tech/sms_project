@@ -1,5 +1,5 @@
 from flask import jsonify
-from marshmallow import ValidationError
+from sqlalchemy.exc import IntegrityError
 from werkzeug.exceptions import HTTPException
 
 
@@ -25,19 +25,6 @@ class APIException(Exception):
         return payload
 
 
-class DatabaseUnavailableError(APIException):
-    """Raised when an operation needs the database while DATABASE_ENABLED is false."""
-    def __init__(self, message=None):
-        super().__init__(
-            message=message or (
-                "Database functionality is temporarily unavailable. "
-                "This operation requires the database, which is currently disconnected."
-            ),
-            status_code=503,
-            error_code="DATABASE_UNAVAILABLE",
-        )
-
-
 def register_error_handlers(app):
     """Register application-wide error handlers returning standard JSON envelopes."""
 
@@ -45,16 +32,15 @@ def register_error_handlers(app):
     def handle_api_exception(error):
         return jsonify(error.to_dict()), error.status_code
 
-    @app.errorhandler(ValidationError)
-    def handle_validation_error(error):
+    @app.errorhandler(IntegrityError)
+    def handle_integrity_error(error):
+        from app.extensions import db
+        db.session.rollback()
+        app.logger.warning("Integrity error: %s", error.orig)
         return jsonify({
             "success": False,
-            "error": {
-                "code": "VALIDATION_ERROR",
-                "message": "Input validation failed.",
-                "details": error.messages,
-            }
-        }), 422
+            "error": {"code": "CONFLICT", "message": "The request conflicts with existing data."},
+        }), 409
 
     @app.errorhandler(400)
     def handle_bad_request(error):
@@ -129,6 +115,8 @@ def register_error_handlers(app):
 
     @app.errorhandler(Exception)
     def handle_generic_exception(error):
+        from app.extensions import db
+        db.session.rollback()
         if isinstance(error, HTTPException):
             return jsonify({
                 "success": False,
@@ -138,7 +126,7 @@ def register_error_handlers(app):
                 }
             }), error.code
 
-        app.logger.exception("Unhandled unhandled exception: %s", error)
+        app.logger.exception("Unhandled exception: %s", error)
         return jsonify({
             "success": False,
             "error": {

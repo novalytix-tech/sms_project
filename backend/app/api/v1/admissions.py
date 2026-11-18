@@ -1,10 +1,12 @@
 import uuid
 from datetime import date, datetime
-from flask import Blueprint, request, jsonify
-from app.extensions import db
+from flask import g, Blueprint, request, jsonify
+from app.auth import ADMIN, role_required, public
+from app.utils.tenant import ensure_same_tenant
+from app.extensions import db, limiter
 from app.models import (
     AdmissionInquiry, AdmissionApplication, ApplicationDocument,
-    ApplicationEvaluation, Student, User, AcademicYear, ClassLevel
+    ApplicationEvaluation, Student, User, AcademicYear, ClassLevel, Institution
 )
 from app.utils.tenant import get_current_tenant_id
 from app.utils.errors import APIException
@@ -17,6 +19,7 @@ admissions_bp = Blueprint("admissions", __name__, url_prefix="/admissions")
 # -------------------------------------------------------------
 
 @admissions_bp.route("/inquiries", methods=["GET"])
+@role_required(*ADMIN)
 def list_inquiries():
     institution_id = get_current_tenant_id()
     query = AdmissionInquiry.query
@@ -57,13 +60,27 @@ def list_inquiries():
 
 
 @admissions_bp.route("/inquiries", methods=["POST"])
+@public
+@limiter.limit("10 per hour")
 def create_inquiry():
-    institution_id = get_current_tenant_id(required=True)
-    payload = request.get_json() or {}
+    """Public website enquiry form. The school is identified by its public institution code."""
+    payload = request.get_json(silent=True) or {}
+    code = str(payload.get("institution_code") or "").strip().upper()
+    institution = Institution.query.filter_by(code=code, status="ACTIVE").first() if code else None
+    if not institution:
+        raise APIException("Unknown school.", status_code=400, error_code="UNKNOWN_INSTITUTION")
+    institution_id = institution.id
 
-    first_name = payload.get("first_name") or payload.get("firstName") or "Applicant"
-    last_name = payload.get("last_name") or payload.get("lastName") or ""
-    phone = payload.get("phone_number") or payload.get("phone")
+    def clip(value, n=255):
+        return str(value).strip()[:n] if value not in (None, "") else None
+
+    for key in list(payload):
+        if isinstance(payload[key], str):
+            payload[key] = payload[key][:1000]
+
+    first_name = clip(payload.get("first_name") or payload.get("firstName"), 100) or "Applicant"
+    last_name = clip(payload.get("last_name") or payload.get("lastName"), 100) or ""
+    phone = clip(payload.get("phone_number") or payload.get("phone"), 30)
     parent_name = payload.get("parent_name") or f"{first_name}'s Parent"
     applicant_name = payload.get("applicant_name") or f"{first_name} {last_name}".strip()
 
@@ -73,13 +90,14 @@ def create_inquiry():
     class_id = payload.get("target_class_level_id") or payload.get("class_level_id")
     class_obj = None
     if class_id:
-        class_obj = ClassLevel.query.filter_by(id=uuid.UUID(str(class_id))).first()
+        try:
+            class_obj = ClassLevel.query.filter_by(id=uuid.UUID(str(class_id)), institution_id=institution_id).first()
+        except ValueError:
+            class_obj = None
     if not class_obj:
-        class_obj = ClassLevel.query.filter_by(institution_id=institution_id).first()
+        class_obj = ClassLevel.query.filter_by(institution_id=institution_id).order_by(ClassLevel.sequence_order).first()
     if not class_obj:
-        class_obj = ClassLevel(institution_id=institution_id, name="Grade 1", code="G1", sequence_order=1)
-        db.session.add(class_obj)
-        db.session.flush()
+        raise APIException("Admissions are not open for this school yet.", status_code=400)
 
     # Parse optional date of birth (accepts YYYY-MM-DD)
     dob_val = None
@@ -130,6 +148,7 @@ def create_inquiry():
 # -------------------------------------------------------------
 
 @admissions_bp.route("/applications", methods=["GET"])
+@role_required(*ADMIN)
 def list_applications():
     institution_id = get_current_tenant_id()
     query = AdmissionApplication.query
@@ -163,6 +182,7 @@ def list_applications():
 
 
 @admissions_bp.route("/applications", methods=["POST"])
+@role_required(*ADMIN)
 def submit_application():
     institution_id = get_current_tenant_id(required=True)
     payload = request.get_json() or {}
@@ -191,7 +211,7 @@ def submit_application():
     dob = payload.get("date_of_birth") or payload.get("dob")
     dob_val = datetime.strptime(str(dob)[:10], "%Y-%m-%d").date() if dob else date(2012, 1, 1)
 
-    app_no = f"APP-{datetime.now().strftime('%Y%m%d%H%M%S')}"
+    app_no = f"APP-{datetime.now().strftime('%Y%m%d')}-{uuid.uuid4().hex[:8].upper()}"
 
     app = AdmissionApplication(
         institution_id=institution_id,
@@ -220,11 +240,13 @@ def submit_application():
 
 
 @admissions_bp.route("/applications/<uuid:application_id>/status", methods=["PUT"])
+@role_required(*ADMIN)
 def update_application_status(application_id):
     institution_id = get_current_tenant_id()
     app = AdmissionApplication.query.filter_by(id=application_id).first()
     if not app:
         raise APIException("Application not found", status_code=404)
+    ensure_same_tenant(app.institution_id)
 
     payload = request.get_json() or {}
     new_status = payload.get("status", "").upper()

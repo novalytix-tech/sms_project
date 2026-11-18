@@ -1,48 +1,35 @@
 import uuid
 from typing import Optional
-from flask import request
-from flask_jwt_extended import verify_jwt_in_request, get_jwt
-from app.models.institution import Institution
+
+from flask import g, request
+
+from app.utils.errors import APIException
 
 
 def get_current_tenant_id(required: bool = False) -> Optional[uuid.UUID]:
+    """Institution the current request is scoped to.
+
+    School users are always scoped to their own institution; client-supplied
+    headers or query params are ignored for them. Only super_admin may choose an
+    institution via the ``X-Institution-Id`` header (None = all institutions).
     """
-    Resolve tenant institution UUID from:
-    1. Authenticated JWT claims ('institution_id')
-    2. 'X-Institution-Id' HTTP header
-    3. 'institution_id' request query argument
-    4. Default primary active institution in the database (fallback for local dev/demo)
-    """
-    # 1. Try JWT
-    try:
-        verify_jwt_in_request(optional=True)
-        claims = get_jwt()
-        if claims and claims.get("institution_id"):
-            val = claims.get("institution_id")
-            if val:
-                return uuid.UUID(str(val))
-    except Exception:
-        pass
+    tenant_id = getattr(g, "institution_id", None)
 
-    # 2. Try Header or Query parameter
-    raw_id = request.headers.get("X-Institution-Id") or request.args.get("institution_id")
-    if raw_id:
-        try:
-            return uuid.UUID(str(raw_id))
-        except (ValueError, TypeError):
-            # Try finding by code
-            inst = Institution.query.filter_by(code=str(raw_id).upper()).first()
-            if inst:
-                return inst.id
+    if "super_admin" in getattr(g, "roles", set()):
+        raw = request.headers.get("X-Institution-Id")
+        if raw:
+            try:
+                tenant_id = uuid.UUID(raw)
+            except ValueError:
+                raise APIException("Invalid X-Institution-Id header.", status_code=400, error_code="BAD_TENANT")
 
-    # 3. Default fallback: primary active institution
-    primary_inst = Institution.query.filter_by(status="ACTIVE").first()
-    if primary_inst:
-        return primary_inst.id
+    if tenant_id is None and required:
+        raise APIException("An institution context is required.", status_code=400, error_code="TENANT_REQUIRED")
+    return tenant_id
 
-    if required:
-        from app.utils.errors import APIException
-        raise APIException("Active institution context required", status_code=400, error_code="TENANT_REQUIRED")
 
-    return None
-
+def ensure_same_tenant(record_institution_id) -> None:
+    """Raise 404 (not 403, to avoid leaking existence) if a record belongs to another school."""
+    tenant_id = get_current_tenant_id()
+    if tenant_id is not None and record_institution_id != tenant_id:
+        raise APIException("Resource not found.", status_code=404, error_code="NOT_FOUND")

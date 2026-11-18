@@ -1,94 +1,70 @@
+import logging
 import os
+
 from flask import Flask
-from app.config import config_by_name
-from app.extensions import (
-    db,
-    migrate,
-    jwt,
-    cors,
-    ma,
-    limiter,
-    socketio,
-    cache,
-)
-from app.utils.errors import register_error_handlers
+from werkzeug.middleware.proxy_fix import ProxyFix
+
 from app.api import register_api_blueprints
-from app.api.v1.auth_callbacks import register_jwt_callbacks
+from app.config import config_by_name
+from app.extensions import cors, db, limiter, migrate
+from app.utils.errors import register_error_handlers
 
 
-def _validate_runtime_modes(flask_app, config_name):
-    """Fail fast on unsafe or incomplete database/authentication configuration."""
-    if flask_app.config.get("DATABASE_ENABLED"):
-        if not flask_app.config.get("SQLALCHEMY_DATABASE_URI"):
-            raise RuntimeError(
-                "DATABASE_ENABLED=true but no database URL is configured "
-                "(set DATABASE_URL, or TEST_DATABASE_URL for the testing config)."
-            )
-        if flask_app.config.get("DEV_AUTH_ENABLED"):
-            flask_app.logger.warning(
-                "DEV_AUTH_ENABLED is ignored because the database is enabled; "
-                "database-backed authentication is in use."
-            )
+def _validate_config(app: Flask, config_name: str) -> None:
+    """Fail fast instead of starting with an insecure or incomplete configuration."""
+    missing = []
+    if not app.config.get("SQLALCHEMY_DATABASE_URI"):
+        missing.append("DATABASE_URL")
+    if not app.config.get("CLERK_SECRET_KEY") and not app.testing:
+        missing.append("CLERK_SECRET_KEY")
+    if config_name == "production":
+        if not app.config.get("CLERK_AUTHORIZED_PARTIES"):
+            missing.append("CLERK_AUTHORIZED_PARTIES")
+        if any(o in ("*", "") for o in app.config.get("CORS_ALLOWED_ORIGINS", [])):
+            raise RuntimeError("CORS_ALLOWED_ORIGINS must list explicit origins in production.")
+    if missing:
+        raise RuntimeError(f"Missing required environment variables: {', '.join(missing)}")
 
-    if flask_app.config.get("DEV_AUTH_ENABLED") and config_name == "production":
-        raise RuntimeError("DEV_AUTH_ENABLED must never be set in production.")
+
+def _security_headers(response):
+    response.headers.setdefault("X-Content-Type-Options", "nosniff")
+    response.headers.setdefault("X-Frame-Options", "DENY")
+    response.headers.setdefault("Referrer-Policy", "strict-origin-when-cross-origin")
+    response.headers.setdefault("Cache-Control", "no-store")
+    response.headers.setdefault("Strict-Transport-Security", "max-age=31536000; includeSubDomains")
+    response.headers.setdefault("Content-Security-Policy", "default-src 'none'; frame-ancestors 'none'")
+    return response
 
 
 def create_app(config_name=None, config_overrides=None):
-    """Application factory for the School ERP backend."""
-    if config_name is None:
-        config_name = os.getenv("FLASK_ENV", "development")
-
-    flask_app = Flask(__name__)
-    config_obj = config_by_name.get(config_name, config_by_name["development"])
-    flask_app.config.from_object(config_obj)
+    config_name = config_name or os.getenv("FLASK_ENV", "development")
+    app = Flask(__name__, static_folder=None)
+    app.config.from_object(config_by_name.get(config_name, config_by_name["development"]))
     if config_overrides:
-        flask_app.config.update(config_overrides)
+        app.config.update(config_overrides)
 
-    _validate_runtime_modes(flask_app, config_name)
+    _validate_config(app, config_name)
 
-    # Initialize extensions with app instance. SQLAlchemy and Alembic are only
-    # bound when the database is enabled, so no engine or connection pool is
-    # created while it is disconnected.
-    if flask_app.config.get("DATABASE_ENABLED"):
-        db.init_app(flask_app)
-        migrate.init_app(flask_app, db)
-    else:
-        flask_app.logger.warning(
-            "Database integration is disabled (DATABASE_ENABLED=false). "
-            "Database-dependent endpoints will return 503 DATABASE_UNAVAILABLE."
-        )
-        # init_app normally registers this; keep scoped sessions from accumulating.
-        flask_app.teardown_appcontext(lambda exc: db.session.remove())
+    if config_name == "production":
+        # Render terminates TLS in front of the app; trust one proxy hop for client IP/scheme.
+        app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1)
+        logging.basicConfig(level=logging.INFO)
 
-    jwt.init_app(flask_app)
-    register_jwt_callbacks(flask_app)
+    db.init_app(app)
+    migrate.init_app(app, db)
     cors.init_app(
-        flask_app,
-        origins=flask_app.config.get("CORS_ALLOWED_ORIGINS", "*"),
-        supports_credentials=True,
+        app,
+        resources={r"/api/*": {"origins": app.config["CORS_ALLOWED_ORIGINS"]}},
+        allow_headers=["Authorization", "Content-Type"],
+        methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+        max_age=600,
     )
-    ma.init_app(flask_app)
-    limiter.init_app(flask_app)
-    cache.init_app(flask_app)
+    limiter.init_app(app)
+    register_error_handlers(app)
+    register_api_blueprints(app)
+    app.after_request(_security_headers)
 
-    # Use Redis as the SocketIO message queue when configured, so realtime events
-    # fan out across multiple workers/servers; falls back to single-process.
-    redis_url = flask_app.config.get("REDIS_URL")
-    if redis_url:
-        socketio.init_app(flask_app, message_queue=redis_url)
-        flask_app.logger.info("Redis connected: rate-limiting, caching, and SocketIO message queue are using Redis.")
-    else:
-        socketio.init_app(flask_app)
+    with app.app_context():
+        from app import models  # noqa: F401  (register models for Alembic)
 
-    # Register standardized error handlers
-    register_error_handlers(flask_app)
-
-    # Register API blueprints
-    register_api_blueprints(flask_app)
-
-    # Load all models so Alembic and SQLAlchemy discover entity metadata
-    with flask_app.app_context():
-        import app.models  # noqa: F401
-
-    return flask_app
+    return app

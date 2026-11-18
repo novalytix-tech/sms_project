@@ -20,14 +20,14 @@ class User(BaseModel):
     )
     username: Mapped[str] = mapped_column(String(100), unique=True, nullable=False, index=True)
     email: Mapped[str] = mapped_column(String(255), unique=True, nullable=False, index=True)
-    password_hash: Mapped[str] = mapped_column(String(255), nullable=False)
+    # Clerk user id (user_...). Set on first sign-in; identity is managed by Clerk.
+    clerk_user_id: Mapped[Optional[str]] = mapped_column(String(64), unique=True, nullable=True, index=True)
     first_name: Mapped[str] = mapped_column(String(100), nullable=False)
     last_name: Mapped[str] = mapped_column(String(100), nullable=False)
     phone: Mapped[Optional[str]] = mapped_column(String(50), nullable=True)
     avatar_url: Mapped[Optional[str]] = mapped_column(String(500), nullable=True)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
     is_verified: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
-    must_change_password: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
     last_login_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
 
     # Relationships
@@ -133,41 +133,3 @@ class RolePermission(BaseModel):
     __table_args__ = (
         UniqueConstraint("role_id", "permission_id", name="uq_role_permission"),
     )
-
-
-class TokenBlocklist(BaseModel):
-    """Blocklist storing revoked JWT tokens."""
-    __tablename__ = "token_blocklist"
-
-    jti: Mapped[str] = mapped_column(String(36), unique=True, nullable=False, index=True)
-    user_id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True),
-        ForeignKey("users.id", ondelete="CASCADE"),
-        nullable=False,
-        index=True,
-    )
-    token_type: Mapped[str] = mapped_column(String(10), nullable=False)  # 'access' or 'refresh'
-    expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, index=True)
-    revoked_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True),
-        default=lambda: datetime.now(timezone.utc),
-        server_default=func.now(),
-        nullable=False,
-    )
-
-
-class PasswordReset(BaseModel):
-    """Cryptographic single-use password reset tokens."""
-    __tablename__ = "password_resets"
-
-    user_id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True),
-        ForeignKey("users.id", ondelete="CASCADE"),
-        nullable=False,
-        index=True,
-    )
-    token_hash: Mapped[str] = mapped_column(String(64), unique=True, nullable=False, index=True)
-    expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, index=True)
-    is_used: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
-    used_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
-

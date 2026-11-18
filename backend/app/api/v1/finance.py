@@ -1,7 +1,9 @@
 import uuid
 from datetime import date, datetime
 from decimal import Decimal
-from flask import Blueprint, request, jsonify
+from flask import g, Blueprint, request, jsonify
+from app.auth import ADMIN, role_required
+from app.utils.tenant import ensure_same_tenant
 from app.extensions import db
 from app.models import (
     FeeStructure, FeeStructureItem, FeeInvoice, FeeInvoiceItem,
@@ -63,6 +65,7 @@ def _serialize_invoice(inv: FeeInvoice):
 # -------------------------------------------------------------
 
 @finance_bp.route("/fee-structures", methods=["GET"])
+@role_required(*ADMIN)
 def list_fee_structures():
     institution_id = get_current_tenant_id()
     query = FeeStructure.query
@@ -97,6 +100,7 @@ def list_fee_structures():
 
 
 @finance_bp.route("/fee-structures", methods=["POST"])
+@role_required(*ADMIN)
 def create_fee_structure():
     institution_id = get_current_tenant_id(required=True)
     payload = request.get_json() or {}
@@ -160,6 +164,7 @@ def create_fee_structure():
 # -------------------------------------------------------------
 
 @finance_bp.route("/invoices", methods=["GET"])
+@role_required(*ADMIN)
 def list_invoices():
     institution_id = get_current_tenant_id()
     query = FeeInvoice.query
@@ -182,20 +187,24 @@ def list_invoices():
 
 
 @finance_bp.route("/invoices/<uuid:invoice_id>", methods=["GET"])
+@role_required(*ADMIN)
 def get_invoice(invoice_id):
     inv = FeeInvoice.query.filter_by(id=invoice_id).first()
     if not inv:
         raise APIException("Invoice not found", status_code=404)
+    ensure_same_tenant(inv.institution_id)
 
     return jsonify({"success": True, "data": _serialize_invoice(inv)}), 200
 
 
 @finance_bp.route("/invoices/<uuid:invoice_id>/pay", methods=["POST"])
+@role_required(*ADMIN)
 def record_invoice_payment(invoice_id):
     """Process a payment against an invoice and record ledger transaction."""
-    inv = FeeInvoice.query.filter_by(id=invoice_id).first()
+    inv = FeeInvoice.query.filter_by(id=invoice_id).with_for_update().first()
     if not inv:
         raise APIException("Invoice not found", status_code=404)
+    ensure_same_tenant(inv.institution_id)
 
     payload = request.get_json() or {}
     raw_amount = payload.get("amount")
@@ -210,7 +219,7 @@ def record_invoice_payment(invoice_id):
         raise APIException(f"Payment amount ({payment_amt}) cannot exceed remaining balance ({inv.balance_amount})", status_code=400)
 
     method = payload.get("payment_method", "CASH").upper()
-    pay_no = f"PAY-{datetime.now().strftime('%Y%m%d%H%M%S')}"
+    pay_no = f"PAY-{datetime.now().strftime('%Y%m%d')}-{uuid.uuid4().hex[:8].upper()}"
 
     # 1. Create Payment
     payment = FeePayment(
@@ -262,6 +271,7 @@ def record_invoice_payment(invoice_id):
 # -------------------------------------------------------------
 
 @finance_bp.route("/summary", methods=["GET"])
+@role_required(*ADMIN)
 def get_finance_summary():
     institution_id = get_current_tenant_id()
     query = FeeInvoice.query

@@ -1,8 +1,9 @@
 import uuid
 from datetime import datetime, timezone
 from decimal import Decimal
-from flask import Blueprint, request, jsonify
-from flask_jwt_extended import get_jwt_identity
+from flask import g, Blueprint, request, jsonify
+from app.auth import ADMIN, STAFF, role_required
+from app.utils.tenant import ensure_same_tenant
 from app.extensions import db
 from app.models import QuestionPaper, QuestionPaperVersion, QuestionPaperReview, User, Subject, ClassLevel
 from app.utils.tenant import get_current_tenant_id
@@ -12,6 +13,7 @@ question_papers_bp = Blueprint("question_papers", __name__, url_prefix="/questio
 
 
 @question_papers_bp.route("", methods=["GET"])
+@role_required(*STAFF)
 def list_question_papers():
     institution_id = get_current_tenant_id()
     query = QuestionPaper.query
@@ -45,10 +47,12 @@ def list_question_papers():
 
 
 @question_papers_bp.route("/<uuid:paper_id>", methods=["GET"])
+@role_required(*STAFF)
 def get_question_paper(paper_id):
     paper = QuestionPaper.query.filter_by(id=paper_id).first()
     if not paper:
         raise APIException("Question paper not found", status_code=404)
+    ensure_same_tenant(paper.institution_id)
 
     return jsonify({
         "success": True,
@@ -83,6 +87,7 @@ def get_question_paper(paper_id):
 
 
 @question_papers_bp.route("", methods=["POST"])
+@role_required(*STAFF)
 def create_question_paper():
     institution_id = get_current_tenant_id(required=True)
     payload = request.get_json() or {}
@@ -94,12 +99,9 @@ def create_question_paper():
     if not title or not subject_id or not class_level_id:
         raise APIException("title, subject_id, and class_level_id are required", status_code=400)
 
-    author_id = get_jwt_identity()
-    if not author_id:
-        u = User.query.filter_by(is_active=True).first()
-        author_id = str(u.id) if u else None
+    author_id = str(g.user_id)
 
-    paper_code = payload.get("paper_code") or f"QP-{datetime.now().strftime('%Y%m%d%H%M%S')}"
+    paper_code = payload.get("paper_code") or f"QP-{datetime.now().strftime('%Y%m%d')}-{uuid.uuid4().hex[:8].upper()}"
 
     paper = QuestionPaper(
         institution_id=institution_id,
@@ -135,10 +137,12 @@ def create_question_paper():
 
 
 @question_papers_bp.route("/<uuid:paper_id>/status", methods=["PUT"])
+@role_required(*ADMIN)
 def transition_question_paper_status(paper_id):
     paper = QuestionPaper.query.filter_by(id=paper_id).first()
     if not paper:
         raise APIException("Question paper not found", status_code=404)
+    ensure_same_tenant(paper.institution_id)
 
     payload = request.get_json() or {}
     new_status = payload.get("status", "").upper()

@@ -61,7 +61,7 @@ def test_attendance_duplication_prevention(session):
     session.flush()
 
     sec = Section(class_level_id=cl.id, name="A", capacity=40)
-    teacher = User(institution_id=inst.id, username=f"t_{uid}", email=f"t_{uid}@att.edu", password_hash="h", first_name="T", last_name="C")
+    teacher = User(institution_id=inst.id, username=f"t_{uid}", email=f"t_{uid}@att.edu",  first_name="T", last_name="C")
     student = Student(institution_id=inst.id, admission_number=f"ADM-ATT-{uid}", admission_date=date(2026, 4, 1), date_of_birth=date(2010, 1, 1), gender="FEMALE")
     session.add_all([sec, teacher, student])
     session.flush()
@@ -96,8 +96,8 @@ def test_timetable_teacher_and_room_conflicts(session):
     period1 = TimetablePeriod(institution_id=inst.id, name="P1", period_number=1, start_time=time(8, 30), end_time=time(9, 15))
     cl = ClassLevel(institution_id=inst.id, name=f"C10-{uid}", code=f"C10-{uid}", sequence_order=10)
     sub = Subject(institution_id=inst.id, code=f"SUB-{uid}", name="Physics", credit_hours=Decimal("1.0"))
-    teacher1 = User(institution_id=inst.id, username=f"t1_{uid}", email=f"t1_{uid}@tt.edu", password_hash="h", first_name="T1", last_name="S")
-    teacher2 = User(institution_id=inst.id, username=f"t2_{uid}", email=f"t2_{uid}@tt.edu", password_hash="h", first_name="T2", last_name="S")
+    teacher1 = User(institution_id=inst.id, username=f"t1_{uid}", email=f"t1_{uid}@tt.edu",  first_name="T1", last_name="S")
+    teacher2 = User(institution_id=inst.id, username=f"t2_{uid}", email=f"t2_{uid}@tt.edu",  first_name="T2", last_name="S")
     session.add_all([ay, room1, room2, period1, cl, sub, teacher1, teacher2])
     session.flush()
 
@@ -171,9 +171,9 @@ def test_library_active_loan_collision_prevention(session):
     session.add(inst)
     session.flush()
 
-    user1 = User(institution_id=inst.id, username=f"u1_{uid}", email=f"u1_{uid}@lib.edu", password_hash="h", first_name="U1", last_name="A")
-    user2 = User(institution_id=inst.id, username=f"u2_{uid}", email=f"u2_{uid}@lib.edu", password_hash="h", first_name="U2", last_name="B")
-    librarian = User(institution_id=inst.id, username=f"lib_{uid}", email=f"lib_{uid}@lib.edu", password_hash="h", first_name="L", last_name="C")
+    user1 = User(institution_id=inst.id, username=f"u1_{uid}", email=f"u1_{uid}@lib.edu",  first_name="U1", last_name="A")
+    user2 = User(institution_id=inst.id, username=f"u2_{uid}", email=f"u2_{uid}@lib.edu",  first_name="U2", last_name="B")
+    librarian = User(institution_id=inst.id, username=f"lib_{uid}", email=f"lib_{uid}@lib.edu",  first_name="L", last_name="C")
     book = Book(institution_id=inst.id, isbn=f"ISBN-{uid}", title="Database Systems", author="Silberschatz", total_copies=1, available_copies=0)
     session.add_all([user1, user2, librarian, book])
     session.flush()
@@ -231,7 +231,7 @@ def test_immutable_question_paper_versions(session):
 
     cl = ClassLevel(institution_id=inst.id, name=f"C10-{uid}", code=f"C10-{uid}", sequence_order=10)
     sub = Subject(institution_id=inst.id, code=f"QP-SUB-{uid}", name="Chemistry", credit_hours=Decimal("1.0"))
-    teacher = User(institution_id=inst.id, username=f"qp_t_{uid}", email=f"qp_t_{uid}@qp.edu", password_hash="h", first_name="T", last_name="Q")
+    teacher = User(institution_id=inst.id, username=f"qp_t_{uid}", email=f"qp_t_{uid}@qp.edu",  first_name="T", last_name="Q")
     session.add_all([cl, sub, teacher])
     session.flush()
 

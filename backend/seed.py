@@ -6,7 +6,7 @@ Populates:
 - Academic Structure: Academic Year 2026-2027, Term 1, Room 204
 - Classes 6 through 12 with Section A and Core Subject Curriculum
 - Exactly 30 fictional Indian Student profiles distributed across Classes 6 to 12
-- Unique student User accounts with Argon2id hashed passwords
+- Student user records (sign-in is handled by Clerk; no passwords are stored)
 - Supporting Administrator, Faculty, Parent, and Supplier Accounts
 """
 
@@ -15,7 +15,6 @@ import sys
 import uuid
 from datetime import date, time, datetime, timezone
 from decimal import Decimal
-from argon2 import PasswordHasher
 
 # Ensure backend root is on sys.path
 backend_dir = os.path.abspath(os.path.dirname(__file__))
@@ -24,7 +23,6 @@ if backend_dir not in sys.path:
 
 from app import create_app
 from app.extensions import db
-from app.utils.security import hash_password
 from app.models import (
     Institution, ServiceEntitlement, InstitutionSetting,
     User, Role, Permission, UserRole, RolePermission,
@@ -37,7 +35,6 @@ from app.models import (
     Supplier, SupplierInstitution
 )
 
-ph = PasswordHasher(time_cost=3, memory_cost=65536, parallelism=4, hash_len=32, salt_len=16)
 
 # --------------------------------------------------------------------------
 # Student Specification Dataset (Exactly 30 Students across Classes 6 to 12)
@@ -47,36 +44,31 @@ STUDENTS_DATA = [
     {
         "class_name": "Class 6", "class_code": "CLS-06", "sequence": 6, "section": "A", "roll": 1,
         "first_name": "Aarav", "last_name": "Sharma", "gender": "MALE", "dob": date(2015, 5, 14),
-        "adm_no": "ADM-2026-0601", "email": "aarav.sharma@student.stxaviers.edu.in", "username": "aarav.sharma",
-        "temp_pass": "Aarav#601", "parent_name": "Rajesh Sharma", "parent_phone": "+91 98111 06010",
+        "adm_no": "ADM-2026-0601", "email": "aarav.sharma@student.stxaviers.edu.in", "username": "aarav.sharma",  "parent_name": "Rajesh Sharma", "parent_phone": "+91 98111 06010",
         "parent_email": "rajesh.sharma.parent@gmail.com", "address": "B-42, Vasant Kunj, New Delhi"
     },
     {
         "class_name": "Class 6", "class_code": "CLS-06", "sequence": 6, "section": "A", "roll": 2,
         "first_name": "Diya", "last_name": "Patel", "gender": "FEMALE", "dob": date(2015, 8, 22),
-        "adm_no": "ADM-2026-0602", "email": "diya.patel@student.stxaviers.edu.in", "username": "diya.patel",
-        "temp_pass": "Diya#602", "parent_name": "Bhavesh Patel", "parent_phone": "+91 98111 06020",
+        "adm_no": "ADM-2026-0602", "email": "diya.patel@student.stxaviers.edu.in", "username": "diya.patel",  "parent_name": "Bhavesh Patel", "parent_phone": "+91 98111 06020",
         "parent_email": "bhavesh.patel.p@gmail.com", "address": "C-12, Saket, New Delhi"
     },
     {
         "class_name": "Class 6", "class_code": "CLS-06", "sequence": 6, "section": "A", "roll": 3,
         "first_name": "Rohan", "last_name": "Verma", "gender": "MALE", "dob": date(2015, 2, 10),
-        "adm_no": "ADM-2026-0603", "email": "rohan.verma@student.stxaviers.edu.in", "username": "rohan.verma",
-        "temp_pass": "Rohan#603", "parent_name": "Manish Verma", "parent_phone": "+91 98111 06030",
+        "adm_no": "ADM-2026-0603", "email": "rohan.verma@student.stxaviers.edu.in", "username": "rohan.verma",  "parent_name": "Manish Verma", "parent_phone": "+91 98111 06030",
         "parent_email": "manish.verma.p@gmail.com", "address": "D-5, Rohini Sector 9, New Delhi"
     },
     {
         "class_name": "Class 6", "class_code": "CLS-06", "sequence": 6, "section": "A", "roll": 4,
         "first_name": "Ananya", "last_name": "Iyer", "gender": "FEMALE", "dob": date(2015, 11, 3),
-        "adm_no": "ADM-2026-0604", "email": "ananya.iyer@student.stxaviers.edu.in", "username": "ananya.iyer",
-        "temp_pass": "Ananya#604", "parent_name": "Sundaram Iyer", "parent_phone": "+91 98111 06040",
+        "adm_no": "ADM-2026-0604", "email": "ananya.iyer@student.stxaviers.edu.in", "username": "ananya.iyer",  "parent_name": "Sundaram Iyer", "parent_phone": "+91 98111 06040",
         "parent_email": "sundaram.iyer.p@gmail.com", "address": "A-18, Dwarka Sector 6, New Delhi"
     },
     {
         "class_name": "Class 6", "class_code": "CLS-06", "sequence": 6, "section": "A", "roll": 5,
         "first_name": "Kabir", "last_name": "Khan", "gender": "MALE", "dob": date(2015, 7, 19),
-        "adm_no": "ADM-2026-0605", "email": "kabir.khan@student.stxaviers.edu.in", "username": "kabir.khan",
-        "temp_pass": "Kabir#605", "parent_name": "Tariq Khan", "parent_phone": "+91 98111 06050",
+        "adm_no": "ADM-2026-0605", "email": "kabir.khan@student.stxaviers.edu.in", "username": "kabir.khan",  "parent_name": "Tariq Khan", "parent_phone": "+91 98111 06050",
         "parent_email": "tariq.khan.p@gmail.com", "address": "H-23, Nizamuddin East, New Delhi"
     },
 
@@ -84,36 +76,31 @@ STUDENTS_DATA = [
     {
         "class_name": "Class 7", "class_code": "CLS-07", "sequence": 7, "section": "A", "roll": 1,
         "first_name": "Meera", "last_name": "Reddy", "gender": "FEMALE", "dob": date(2014, 4, 16),
-        "adm_no": "ADM-2026-0701", "email": "meera.reddy@student.stxaviers.edu.in", "username": "meera.reddy",
-        "temp_pass": "Meera#701", "parent_name": "Venkat Reddy", "parent_phone": "+91 98111 07010",
+        "adm_no": "ADM-2026-0701", "email": "meera.reddy@student.stxaviers.edu.in", "username": "meera.reddy",  "parent_name": "Venkat Reddy", "parent_phone": "+91 98111 07010",
         "parent_email": "venkat.reddy.p@gmail.com", "address": "E-7, Hauz Khas, New Delhi"
     },
     {
         "class_name": "Class 7", "class_code": "CLS-07", "sequence": 7, "section": "A", "roll": 2,
         "first_name": "Tanvi", "last_name": "Deshmukh", "gender": "FEMALE", "dob": date(2014, 9, 28),
-        "adm_no": "ADM-2026-0702", "email": "tanvi.deshmukh@student.stxaviers.edu.in", "username": "tanvi.deshmukh",
-        "temp_pass": "Tanvi#702", "parent_name": "Sachin Deshmukh", "parent_phone": "+91 98111 07020",
+        "adm_no": "ADM-2026-0702", "email": "tanvi.deshmukh@student.stxaviers.edu.in", "username": "tanvi.deshmukh",  "parent_name": "Sachin Deshmukh", "parent_phone": "+91 98111 07020",
         "parent_email": "sachin.deshmukh.p@gmail.com", "address": "J-14, Green Park, New Delhi"
     },
     {
         "class_name": "Class 7", "class_code": "CLS-07", "sequence": 7, "section": "A", "roll": 3,
         "first_name": "Aditya", "last_name": "Joshi", "gender": "MALE", "dob": date(2014, 1, 11),
-        "adm_no": "ADM-2026-0703", "email": "aditya.joshi@student.stxaviers.edu.in", "username": "aditya.joshi",
-        "temp_pass": "Aditya#703", "parent_name": "Prakash Joshi", "parent_phone": "+91 98111 07030",
+        "adm_no": "ADM-2026-0703", "email": "aditya.joshi@student.stxaviers.edu.in", "username": "aditya.joshi",  "parent_name": "Prakash Joshi", "parent_phone": "+91 98111 07030",
         "parent_email": "prakash.joshi.p@gmail.com", "address": "F-3, Janakpuri, New Delhi"
     },
     {
         "class_name": "Class 7", "class_code": "CLS-07", "sequence": 7, "section": "A", "roll": 4,
         "first_name": "Ishaan", "last_name": "Malhotra", "gender": "MALE", "dob": date(2014, 6, 30),
-        "adm_no": "ADM-2026-0704", "email": "ishaan.malhotra@student.stxaviers.edu.in", "username": "ishaan.malhotra",
-        "temp_pass": "Ishaan#704", "parent_name": "Rajiv Malhotra", "parent_phone": "+91 98111 07040",
+        "adm_no": "ADM-2026-0704", "email": "ishaan.malhotra@student.stxaviers.edu.in", "username": "ishaan.malhotra",  "parent_name": "Rajiv Malhotra", "parent_phone": "+91 98111 07040",
         "parent_email": "rajiv.malhotra.p@gmail.com", "address": "M-8, Greater Kailash I, New Delhi"
     },
     {
         "class_name": "Class 7", "class_code": "CLS-07", "sequence": 7, "section": "A", "roll": 5,
         "first_name": "Sanya", "last_name": "Gupta", "gender": "FEMALE", "dob": date(2014, 12, 5),
-        "adm_no": "ADM-2026-0705", "email": "sanya.gupta@student.stxaviers.edu.in", "username": "sanya.gupta",
-        "temp_pass": "Sanya#705", "parent_name": "Deepak Gupta", "parent_phone": "+91 98111 07050",
+        "adm_no": "ADM-2026-0705", "email": "sanya.gupta@student.stxaviers.edu.in", "username": "sanya.gupta",  "parent_name": "Deepak Gupta", "parent_phone": "+91 98111 07050",
         "parent_email": "deepak.gupta.p@gmail.com", "address": "B-9, Preet Vihar, New Delhi"
     },
 
@@ -121,29 +108,25 @@ STUDENTS_DATA = [
     {
         "class_name": "Class 8", "class_code": "CLS-08", "sequence": 8, "section": "A", "roll": 1,
         "first_name": "Vihaan", "last_name": "Kapoor", "gender": "MALE", "dob": date(2013, 3, 21),
-        "adm_no": "ADM-2026-0801", "email": "vihaan.kapoor@student.stxaviers.edu.in", "username": "vihaan.kapoor",
-        "temp_pass": "Vihaan#801", "parent_name": "Sunil Kapoor", "parent_phone": "+91 98111 08010",
+        "adm_no": "ADM-2026-0801", "email": "vihaan.kapoor@student.stxaviers.edu.in", "username": "vihaan.kapoor",  "parent_name": "Sunil Kapoor", "parent_phone": "+91 98111 08010",
         "parent_email": "sunil.kapoor.p@gmail.com", "address": "N-11, Defence Colony, New Delhi"
     },
     {
         "class_name": "Class 8", "class_code": "CLS-08", "sequence": 8, "section": "A", "roll": 2,
         "first_name": "Sneha", "last_name": "Nambiar", "gender": "FEMALE", "dob": date(2013, 7, 14),
-        "adm_no": "ADM-2026-0802", "email": "sneha.nambiar@student.stxaviers.edu.in", "username": "sneha.nambiar",
-        "temp_pass": "Sneha#802", "parent_name": "Narayanan Nambiar", "parent_phone": "+91 98111 08020",
+        "adm_no": "ADM-2026-0802", "email": "sneha.nambiar@student.stxaviers.edu.in", "username": "sneha.nambiar",  "parent_name": "Narayanan Nambiar", "parent_phone": "+91 98111 08020",
         "parent_email": "nambiar.p@gmail.com", "address": "K-4, Mayur Vihar Phase I, New Delhi"
     },
     {
         "class_name": "Class 8", "class_code": "CLS-08", "sequence": 8, "section": "A", "roll": 3,
         "first_name": "Aryan", "last_name": "Saxena", "gender": "MALE", "dob": date(2013, 10, 9),
-        "adm_no": "ADM-2026-0803", "email": "aryan.saxena@student.stxaviers.edu.in", "username": "aryan.saxena",
-        "temp_pass": "Aryan#803", "parent_name": "Alok Saxena", "parent_phone": "+91 98111 08030",
+        "adm_no": "ADM-2026-0803", "email": "aryan.saxena@student.stxaviers.edu.in", "username": "aryan.saxena",  "parent_name": "Alok Saxena", "parent_phone": "+91 98111 08030",
         "parent_email": "alok.saxena.p@gmail.com", "address": "P-16, Paschim Vihar, New Delhi"
     },
     {
         "class_name": "Class 8", "class_code": "CLS-08", "sequence": 8, "section": "A", "roll": 4,
         "first_name": "Pooja", "last_name": "Bhatt", "gender": "FEMALE", "dob": date(2013, 1, 25),
-        "adm_no": "ADM-2026-0804", "email": "pooja.bhatt@student.stxaviers.edu.in", "username": "pooja.bhatt",
-        "temp_pass": "Pooja#804", "parent_name": "Harish Bhatt", "parent_phone": "+91 98111 08040",
+        "adm_no": "ADM-2026-0804", "email": "pooja.bhatt@student.stxaviers.edu.in", "username": "pooja.bhatt",  "parent_name": "Harish Bhatt", "parent_phone": "+91 98111 08040",
         "parent_email": "harish.bhatt.p@gmail.com", "address": "C-8, Pitampura, New Delhi"
     },
 
@@ -151,29 +134,25 @@ STUDENTS_DATA = [
     {
         "class_name": "Class 9", "class_code": "CLS-09", "sequence": 9, "section": "A", "roll": 1,
         "first_name": "Advait", "last_name": "Menon", "gender": "MALE", "dob": date(2012, 5, 18),
-        "adm_no": "ADM-2026-0901", "email": "advait.menon@student.stxaviers.edu.in", "username": "advait.menon",
-        "temp_pass": "Advait#901", "parent_name": "Krishnan Menon", "parent_phone": "+91 98111 09010",
+        "adm_no": "ADM-2026-0901", "email": "advait.menon@student.stxaviers.edu.in", "username": "advait.menon",  "parent_name": "Krishnan Menon", "parent_phone": "+91 98111 09010",
         "parent_email": "krishnan.menon.p@gmail.com", "address": "G-22, Safdarjung Enclave, New Delhi"
     },
     {
         "class_name": "Class 9", "class_code": "CLS-09", "sequence": 9, "section": "A", "roll": 2,
         "first_name": "Riya", "last_name": "Sen", "gender": "FEMALE", "dob": date(2012, 8, 31),
-        "adm_no": "ADM-2026-0902", "email": "riya.sen@student.stxaviers.edu.in", "username": "riya.sen",
-        "temp_pass": "Riya#902", "parent_name": "Subhash Sen", "parent_phone": "+91 98111 09020",
+        "adm_no": "ADM-2026-0902", "email": "riya.sen@student.stxaviers.edu.in", "username": "riya.sen",  "parent_name": "Subhash Sen", "parent_phone": "+91 98111 09020",
         "parent_email": "subhash.sen.p@gmail.com", "address": "T-5, Chittaranjan Park, New Delhi"
     },
     {
         "class_name": "Class 9", "class_code": "CLS-09", "sequence": 9, "section": "A", "roll": 3,
         "first_name": "Reyansh", "last_name": "Choudhury", "gender": "MALE", "dob": date(2012, 11, 12),
-        "adm_no": "ADM-2026-0903", "email": "reyansh.choudhury@student.stxaviers.edu.in", "username": "reyansh.choudhury",
-        "temp_pass": "Reyansh#903", "parent_name": "Debashis Choudhury", "parent_phone": "+91 98111 09030",
+        "adm_no": "ADM-2026-0903", "email": "reyansh.choudhury@student.stxaviers.edu.in", "username": "reyansh.choudhury",  "parent_name": "Debashis Choudhury", "parent_phone": "+91 98111 09030",
         "parent_email": "debashis.c.p@gmail.com", "address": "L-19, Lajpat Nagar III, New Delhi"
     },
     {
         "class_name": "Class 9", "class_code": "CLS-09", "sequence": 9, "section": "A", "roll": 4,
         "first_name": "Anika", "last_name": "Nair", "gender": "FEMALE", "dob": date(2012, 2, 4),
-        "adm_no": "ADM-2026-0904", "email": "anika.nair@student.stxaviers.edu.in", "username": "anika.nair",
-        "temp_pass": "Anika#904", "parent_name": "Mohan Nair", "parent_phone": "+91 98111 09040",
+        "adm_no": "ADM-2026-0904", "email": "anika.nair@student.stxaviers.edu.in", "username": "anika.nair",  "parent_name": "Mohan Nair", "parent_phone": "+91 98111 09040",
         "parent_email": "mohan.nair.p@gmail.com", "address": "W-10, Karol Bagh, New Delhi"
     },
 
@@ -181,36 +160,31 @@ STUDENTS_DATA = [
     {
         "class_name": "Class 10", "class_code": "CLS-10", "sequence": 10, "section": "A", "roll": 1,
         "first_name": "Pranav", "last_name": "Bansal", "gender": "MALE", "dob": date(2011, 4, 8),
-        "adm_no": "ADM-2026-1001", "email": "pranav.bansal@student.stxaviers.edu.in", "username": "pranav.bansal",
-        "temp_pass": "Pranav#1001", "parent_name": "Vijay Bansal", "parent_phone": "+91 98111 10010",
+        "adm_no": "ADM-2026-1001", "email": "pranav.bansal@student.stxaviers.edu.in", "username": "pranav.bansal",  "parent_name": "Vijay Bansal", "parent_phone": "+91 98111 10010",
         "parent_email": "vijay.bansal.p@gmail.com", "address": "R-2, Punjabi Bagh, New Delhi"
     },
     {
         "class_name": "Class 10", "class_code": "CLS-10", "sequence": 10, "section": "A", "roll": 2,
         "first_name": "Tara", "last_name": "Mukherjee", "gender": "FEMALE", "dob": date(2011, 9, 17),
-        "adm_no": "ADM-2026-1002", "email": "tara.mukherjee@student.stxaviers.edu.in", "username": "tara.mukherjee",
-        "temp_pass": "Tara#1002", "parent_name": "Anirban Mukherjee", "parent_phone": "+91 98111 10020",
+        "adm_no": "ADM-2026-1002", "email": "tara.mukherjee@student.stxaviers.edu.in", "username": "tara.mukherjee",  "parent_name": "Anirban Mukherjee", "parent_phone": "+91 98111 10020",
         "parent_email": "anirban.m.p@gmail.com", "address": "S-14, Alaknanda, New Delhi"
     },
     {
         "class_name": "Class 10", "class_code": "CLS-10", "sequence": 10, "section": "A", "roll": 3,
         "first_name": "Ayush", "last_name": "Singhal", "gender": "MALE", "dob": date(2011, 1, 29),
-        "adm_no": "ADM-2026-1003", "email": "ayush.singhal@student.stxaviers.edu.in", "username": "ayush.singhal",
-        "temp_pass": "Ayush#1003", "parent_name": "Rakesh Singhal", "parent_phone": "+91 98111 10030",
+        "adm_no": "ADM-2026-1003", "email": "ayush.singhal@student.stxaviers.edu.in", "username": "ayush.singhal",  "parent_name": "Rakesh Singhal", "parent_phone": "+91 98111 10030",
         "parent_email": "rakesh.singhal.p@gmail.com", "address": "B-6, Model Town, New Delhi"
     },
     {
         "class_name": "Class 10", "class_code": "CLS-10", "sequence": 10, "section": "A", "roll": 4,
         "first_name": "Disha", "last_name": "Trivedi", "gender": "FEMALE", "dob": date(2011, 6, 23),
-        "adm_no": "ADM-2026-1004", "email": "disha.trivedi@student.stxaviers.edu.in", "username": "disha.trivedi",
-        "temp_pass": "Disha#1004", "parent_name": "Jayesh Trivedi", "parent_phone": "+91 98111 10040",
+        "adm_no": "ADM-2026-1004", "email": "disha.trivedi@student.stxaviers.edu.in", "username": "disha.trivedi",  "parent_name": "Jayesh Trivedi", "parent_phone": "+91 98111 10040",
         "parent_email": "jayesh.trivedi.p@gmail.com", "address": "E-15, Rajouri Garden, New Delhi"
     },
     {
         "class_name": "Class 10", "class_code": "CLS-10", "sequence": 10, "section": "A", "roll": 5,
         "first_name": "Vivaan", "last_name": "Bose", "gender": "MALE", "dob": date(2011, 12, 19),
-        "adm_no": "ADM-2026-1005", "email": "vivaan.bose@student.stxaviers.edu.in", "username": "vivaan.bose",
-        "temp_pass": "Vivaan#1005", "parent_name": "Sourav Bose", "parent_phone": "+91 98111 10050",
+        "adm_no": "ADM-2026-1005", "email": "vivaan.bose@student.stxaviers.edu.in", "username": "vivaan.bose",  "parent_name": "Sourav Bose", "parent_phone": "+91 98111 10050",
         "parent_email": "sourav.bose.p@gmail.com", "address": "M-3, New Friends Colony, New Delhi"
     },
 
@@ -218,29 +192,25 @@ STUDENTS_DATA = [
     {
         "class_name": "Class 11", "class_code": "CLS-11", "sequence": 11, "section": "A", "roll": 1,
         "first_name": "Kriti", "last_name": "Agarwal", "gender": "FEMALE", "dob": date(2010, 3, 15),
-        "adm_no": "ADM-2026-1101", "email": "kriti.agarwal@student.stxaviers.edu.in", "username": "kriti.agarwal",
-        "temp_pass": "Kriti#1101", "parent_name": "Sanjay Agarwal", "parent_phone": "+91 98111 11010",
+        "adm_no": "ADM-2026-1101", "email": "kriti.agarwal@student.stxaviers.edu.in", "username": "kriti.agarwal",  "parent_name": "Sanjay Agarwal", "parent_phone": "+91 98111 11010",
         "parent_email": "sanjay.agarwal.p@gmail.com", "address": "A-31, Civil Lines, New Delhi"
     },
     {
         "class_name": "Class 11", "class_code": "CLS-11", "sequence": 11, "section": "A", "roll": 2,
         "first_name": "Dhruv", "last_name": "Chawla", "gender": "MALE", "dob": date(2010, 7, 27),
-        "adm_no": "ADM-2026-1102", "email": "dhruv.chawla@student.stxaviers.edu.in", "username": "dhruv.chawla",
-        "temp_pass": "Dhruv#1102", "parent_name": "Gurpreet Chawla", "parent_phone": "+91 98111 11020",
+        "adm_no": "ADM-2026-1102", "email": "dhruv.chawla@student.stxaviers.edu.in", "username": "dhruv.chawla",  "parent_name": "Gurpreet Chawla", "parent_phone": "+91 98111 11020",
         "parent_email": "gurpreet.chawla.p@gmail.com", "address": "D-9, Patel Nagar, New Delhi"
     },
     {
         "class_name": "Class 11", "class_code": "CLS-11", "sequence": 11, "section": "A", "roll": 3,
         "first_name": "Neha", "last_name": "Kulkarni", "gender": "FEMALE", "dob": date(2010, 10, 14),
-        "adm_no": "ADM-2026-1103", "email": "neha.kulkarni@student.stxaviers.edu.in", "username": "neha.kulkarni",
-        "temp_pass": "Neha#1103", "parent_name": "Nitin Kulkarni", "parent_phone": "+91 98111 11030",
+        "adm_no": "ADM-2026-1103", "email": "neha.kulkarni@student.stxaviers.edu.in", "username": "neha.kulkarni",  "parent_name": "Nitin Kulkarni", "parent_phone": "+91 98111 11030",
         "parent_email": "nitin.kulkarni.p@gmail.com", "address": "H-11, Vasant Vihar, New Delhi"
     },
     {
         "class_name": "Class 11", "class_code": "CLS-11", "sequence": 11, "section": "A", "roll": 4,
         "first_name": "Yash", "last_name": "Vardhan", "gender": "MALE", "dob": date(2010, 2, 8),
-        "adm_no": "ADM-2026-1104", "email": "yash.vardhan@student.stxaviers.edu.in", "username": "yash.vardhan",
-        "temp_pass": "Yash#1104", "parent_name": "Harsh Vardhan", "parent_phone": "+91 98111 11040",
+        "adm_no": "ADM-2026-1104", "email": "yash.vardhan@student.stxaviers.edu.in", "username": "yash.vardhan",  "parent_name": "Harsh Vardhan", "parent_phone": "+91 98111 11040",
         "parent_email": "harsh.vardhan.p@gmail.com", "address": "C-25, Anand Niketan, New Delhi"
     },
 
@@ -248,22 +218,19 @@ STUDENTS_DATA = [
     {
         "class_name": "Class 12", "class_code": "CLS-12", "sequence": 12, "section": "A", "roll": 1,
         "first_name": "Shruti", "last_name": "Srinivasan", "gender": "FEMALE", "dob": date(2009, 5, 20),
-        "adm_no": "ADM-2026-1201", "email": "shruti.srinivasan@student.stxaviers.edu.in", "username": "shruti.srinivasan",
-        "temp_pass": "Shruti#1201", "parent_name": "Raman Srinivasan", "parent_phone": "+91 98111 12010",
+        "adm_no": "ADM-2026-1201", "email": "shruti.srinivasan@student.stxaviers.edu.in", "username": "shruti.srinivasan",  "parent_name": "Raman Srinivasan", "parent_phone": "+91 98111 12010",
         "parent_email": "raman.srinivasan.p@gmail.com", "address": "F-18, Shanti Niketan, New Delhi"
     },
     {
         "class_name": "Class 12", "class_code": "CLS-12", "sequence": 12, "section": "A", "roll": 2,
         "first_name": "Manav", "last_name": "Aggarwal", "gender": "MALE", "dob": date(2009, 9, 11),
-        "adm_no": "ADM-2026-1202", "email": "manav.aggarwal@student.stxaviers.edu.in", "username": "manav.aggarwal",
-        "temp_pass": "Manav#1202", "parent_name": "Pradeep Aggarwal", "parent_phone": "+91 98111 12020",
+        "adm_no": "ADM-2026-1202", "email": "manav.aggarwal@student.stxaviers.edu.in", "username": "manav.aggarwal",  "parent_name": "Pradeep Aggarwal", "parent_phone": "+91 98111 12020",
         "parent_email": "pradeep.aggarwal.p@gmail.com", "address": "B-2, Gulmohar Park, New Delhi"
     },
     {
         "class_name": "Class 12", "class_code": "CLS-12", "sequence": 12, "section": "A", "roll": 3,
         "first_name": "Ananya", "last_name": "Ghosh", "gender": "FEMALE", "dob": date(2009, 12, 3),
-        "adm_no": "ADM-2026-1203", "email": "ananya.ghosh@student.stxaviers.edu.in", "username": "ananya.ghosh",
-        "temp_pass": "Ananya#1203", "parent_name": "Amitava Ghosh", "parent_phone": "+91 98111 12030",
+        "adm_no": "ADM-2026-1203", "email": "ananya.ghosh@student.stxaviers.edu.in", "username": "ananya.ghosh",  "parent_name": "Amitava Ghosh", "parent_phone": "+91 98111 12030",
         "parent_email": "amitava.ghosh.p@gmail.com", "address": "K-12, Panchsheel Park, New Delhi"
     },
 ]
@@ -274,47 +241,39 @@ STUDENTS_DATA = [
 SUPPORTING_ACCOUNTS = [
     {
         "role": Role.SUPER_ADMIN, "name": "Vikramaditya Rao", "first_name": "Vikramaditya", "last_name": "Rao",
-        "email": "superadmin@sms.edu.in", "alt_email": "superadmin@novalytix.com", "username": "superadmin",
-        "temp_pass": "SuperAdmin#2026!", "phone": "+91 99000 88776"
+        "email": "superadmin@sms.edu.in", "alt_email": "superadmin@novalytix.com", "username": "superadmin",  "phone": "+91 99000 88776"
     },
     {
         "role": Role.SCHOOL_ADMIN, "name": "Dr. Arvind Swaminathan", "first_name": "Arvind", "last_name": "Swaminathan",
-        "email": "principal@stxaviers.edu.in", "username": "principal",
-        "temp_pass": "Principal#2026!", "phone": "+91 98450 12345", "designation": "Principal & Head of School"
+        "email": "principal@stxaviers.edu.in", "username": "principal",  "phone": "+91 98450 12345", "designation": "Principal & Head of School"
     },
     {
         "role": Role.TEACHER, "name": "Mrs. Ananya Sharma", "first_name": "Ananya", "last_name": "Sharma",
-        "email": "ananya.sharma@stxaviers.edu.in", "username": "ananya.sharma",
-        "temp_pass": "Teacher#Ananya26!", "phone": "+91 97111 22334", "designation": "PGT Mathematics & Senior Teacher",
+        "email": "ananya.sharma@stxaviers.edu.in", "username": "ananya.sharma",  "phone": "+91 97111 22334", "designation": "PGT Mathematics & Senior Teacher",
         "emp_code": "STX-T-101", "specialization": "Pure Mathematics", "experience": 8
     },
     {
         "role": Role.TEACHER, "name": "Mrs. Sunita Verma", "first_name": "Sunita", "last_name": "Verma",
-        "email": "sunita.verma@stxaviers.edu.in", "username": "sunita.verma",
-        "temp_pass": "Teacher#Sunita26!", "phone": "+91 98333 44556", "designation": "Science Teacher & Librarian In-Charge",
+        "email": "sunita.verma@stxaviers.edu.in", "username": "sunita.verma",  "phone": "+91 98333 44556", "designation": "Science Teacher & Librarian In-Charge",
         "emp_code": "STX-T-105", "specialization": "Physical Sciences", "experience": 10
     },
     {
         "role": Role.TEACHER, "name": "Mr. Rajesh Sharma", "first_name": "Rajesh", "last_name": "Sharma",
-        "email": "rajesh.sharma@stxaviers.edu.in", "username": "rajesh.sharma",
-        "temp_pass": "Teacher#Rajesh26!", "phone": "+91 98222 77889", "designation": "PGT Physics",
+        "email": "rajesh.sharma@stxaviers.edu.in", "username": "rajesh.sharma",  "phone": "+91 98222 77889", "designation": "PGT Physics",
         "emp_code": "STX-T-108", "specialization": "Physics", "experience": 7
     },
     {
         "role": Role.TEACHER, "name": "Ms. Priya Nair", "first_name": "Priya", "last_name": "Nair",
-        "email": "priya.nair@stxaviers.edu.in", "username": "priya.nair",
-        "temp_pass": "Teacher#Priya26!", "phone": "+91 98111 99887", "designation": "TGT Social Studies",
+        "email": "priya.nair@stxaviers.edu.in", "username": "priya.nair",  "phone": "+91 98111 99887", "designation": "TGT Social Studies",
         "emp_code": "STX-T-112", "specialization": "Social Science", "experience": 5
     },
     {
         "role": Role.PARENT, "name": "Mr. Vikram Patel", "first_name": "Vikram", "last_name": "Patel",
-        "email": "vikram.patel@gmail.com", "alt_email": "parent@stxaviers.edu.in", "username": "vikram.patel",
-        "temp_pass": "Parent#2026!", "phone": "+91 98112 34567", "occupation": "Software Architect"
+        "email": "vikram.patel@gmail.com", "alt_email": "parent@stxaviers.edu.in", "username": "vikram.patel",  "phone": "+91 98112 34567", "occupation": "Software Architect"
     },
     {
         "role": Role.SUPPLIER, "name": "Apex Educational Supplies", "first_name": "Apex", "last_name": "Supplies",
-        "email": "orders@apexsupplies.in", "alt_email": "vendor@apexsupplies.com", "username": "apexsupplies",
-        "temp_pass": "Supplier#2026!", "phone": "+91 11 2327 8901", "vendor_code": "VEND-APEX-01"
+        "email": "orders@apexsupplies.in", "alt_email": "vendor@apexsupplies.com", "username": "apexsupplies",  "phone": "+91 11 2327 8901", "vendor_code": "VEND-APEX-01"
     },
 ]
 
@@ -326,6 +285,14 @@ def seed_database(app=None):
     # Strictly prohibit running demo seed in production
     if app.config.get("ENV") == "production" or os.getenv("FLASK_ENV") == "production":
         raise RuntimeError("CRITICAL SECURITY ERROR: Seeding demonstration accounts is strictly disabled in production!")
+
+    # Local testing: set SEED_ADMIN_EMAIL to the email you sign in to Clerk with, so
+    # that Clerk account links to the seeded school_admin (principal) on first sign-in.
+    admin_email = (os.getenv("SEED_ADMIN_EMAIL") or "").strip().lower()
+    if admin_email:
+        for acc in SUPPORTING_ACCOUNTS:
+            if acc["role"] == Role.SCHOOL_ADMIN:
+                acc["email"] = admin_email
 
     with app.app_context():
         print("[*] Seeding School ERP database with Fresh 30-Student Dataset...")
@@ -538,8 +505,6 @@ def seed_database(app=None):
         # -------------------------------------------------------------
         users_map = {}
         for acc in SUPPORTING_ACCOUNTS:
-            hashed_pwd = hash_password(acc["temp_pass"])
-
             # Match by primary email, username, or alt_email
             query = (User.email == acc["email"]) | (User.username == acc["username"])
             if "alt_email" in acc:
@@ -551,7 +516,6 @@ def seed_database(app=None):
                     institution_id=inst.id if acc["role"] != Role.SUPER_ADMIN else None,
                     username=acc["username"],
                     email=acc["email"],
-                    password_hash=hashed_pwd,
                     first_name=acc["first_name"],
                     last_name=acc["last_name"],
                     phone=acc["phone"],
@@ -562,7 +526,6 @@ def seed_database(app=None):
                 db.session.flush()
                 print(f"  + Created Supporting User: {user.email} ({acc['role']})")
             else:
-                user.password_hash = hashed_pwd
                 user.is_active = True
                 user.is_verified = True
 
@@ -582,7 +545,6 @@ def seed_database(app=None):
                         institution_id=inst.id if acc["role"] != Role.SUPER_ADMIN else None,
                         username=f"{acc['username']}_alt",
                         email=acc["alt_email"],
-                        password_hash=hashed_pwd,
                         first_name=acc["first_name"],
                         last_name=acc["last_name"],
                         phone=acc["phone"],
@@ -652,8 +614,6 @@ def seed_database(app=None):
         # -------------------------------------------------------------
         student_role = roles_map[Role.STUDENT]
         for s_idx, s_data in enumerate(STUDENTS_DATA, start=1):
-            s_hash = hash_password(s_data["temp_pass"])
-
             # User record
             stud_user = User.query.filter((User.email == s_data["email"]) | (User.username == s_data["username"])).first()
             if not stud_user:
@@ -661,7 +621,6 @@ def seed_database(app=None):
                     institution_id=inst.id,
                     username=s_data["username"],
                     email=s_data["email"],
-                    password_hash=s_hash,
                     first_name=s_data["first_name"],
                     last_name=s_data["last_name"],
                     phone=s_data["parent_phone"],
@@ -673,7 +632,6 @@ def seed_database(app=None):
             else:
                 stud_user.email = s_data["email"]
                 stud_user.username = s_data["username"]
-                stud_user.password_hash = s_hash
                 stud_user.is_active = True
                 stud_user.is_verified = True
 

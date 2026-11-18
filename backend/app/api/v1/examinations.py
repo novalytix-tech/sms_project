@@ -1,7 +1,9 @@
 import uuid
 from datetime import date, datetime
 from decimal import Decimal
-from flask import Blueprint, request, jsonify
+from flask import g, Blueprint, request, jsonify
+from app.auth import ANY_MEMBER, STAFF, role_required
+from app.utils.tenant import ensure_same_tenant
 from app.extensions import db
 from app.models import Exam, ExamSchedule, ExamResult, GradingScale, AcademicYear, Section, Subject, Student, StudentEnrollment
 from app.utils.tenant import get_current_tenant_id
@@ -11,6 +13,7 @@ examinations_bp = Blueprint("examinations", __name__, url_prefix="/examinations"
 
 
 @examinations_bp.route("/exams", methods=["GET"])
+@role_required(*ANY_MEMBER)
 def list_exams():
     institution_id = get_current_tenant_id()
     query = Exam.query
@@ -50,6 +53,7 @@ def list_exams():
 
 
 @examinations_bp.route("/results", methods=["GET"])
+@role_required(*STAFF)
 def list_results():
     exam_id = request.args.get("exam_id")
     student_id = request.args.get("student_id")
@@ -79,6 +83,7 @@ def list_results():
 
 
 @examinations_bp.route("/grading-scales", methods=["GET"])
+@role_required(*ANY_MEMBER)
 def list_grading_scales():
     institution_id = get_current_tenant_id()
     query = GradingScale.query

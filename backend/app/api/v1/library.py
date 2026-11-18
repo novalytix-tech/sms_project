@@ -1,8 +1,9 @@
 import uuid
 from datetime import date, datetime, timedelta
 from decimal import Decimal
-from flask import Blueprint, request, jsonify
-from flask_jwt_extended import get_jwt_identity
+from flask import g, Blueprint, request, jsonify
+from app.auth import ADMIN, ANY_MEMBER, STAFF, role_required
+from app.utils.tenant import ensure_same_tenant
 from app.extensions import db
 from app.models import Book, BookCopy, BookLoan, LibraryFine, User
 from app.utils.tenant import get_current_tenant_id
@@ -16,6 +17,7 @@ library_bp = Blueprint("library", __name__, url_prefix="/library")
 # -------------------------------------------------------------
 
 @library_bp.route("/books", methods=["GET"])
+@role_required(*ANY_MEMBER)
 def list_books():
     institution_id = get_current_tenant_id()
     query = Book.query
@@ -64,6 +66,7 @@ def list_books():
 
 
 @library_bp.route("/books", methods=["POST"])
+@role_required(*STAFF)
 def create_book():
     institution_id = get_current_tenant_id(required=True)
     payload = request.get_json() or {}
@@ -118,6 +121,7 @@ def create_book():
 # -------------------------------------------------------------
 
 @library_bp.route("/loans", methods=["GET"])
+@role_required(*STAFF)
 def list_loans():
     status = request.args.get("status")
     query = BookLoan.query
@@ -145,6 +149,7 @@ def list_loans():
 
 
 @library_bp.route("/loans/issue", methods=["POST"])
+@role_required(*STAFF)
 def issue_book():
     payload = request.get_json() or {}
     copy_id = payload.get("copy_id")
@@ -152,19 +157,21 @@ def issue_book():
 
     if not copy_id or not borrower_id:
         raise APIException("copy_id and borrower_user_id are required", status_code=400)
+    borrower = db.session.get(User, uuid.UUID(str(borrower_id)))
+    if not borrower:
+        raise APIException("Borrower not found", status_code=404)
+    ensure_same_tenant(borrower.institution_id)
 
     copy = BookCopy.query.filter_by(id=uuid.UUID(str(copy_id))).first()
     if not copy:
         raise APIException("Book copy not found", status_code=404)
+    ensure_same_tenant(copy.book.institution_id)
 
     if copy.status != "AVAILABLE":
         raise APIException(f"Copy is currently '{copy.status}' and cannot be issued", status_code=400)
 
     # Resolve issuer user
-    issuer_id = get_jwt_identity()
-    if not issuer_id:
-        u = User.query.filter_by(is_active=True).first()
-        issuer_id = str(u.id) if u else str(borrower_id)
+    issuer_id = str(g.user_id)
 
     duration_days = payload.get("duration_days", 14)
     due_date = date.today() + timedelta(days=duration_days)
@@ -197,10 +204,12 @@ def issue_book():
 
 
 @library_bp.route("/loans/<uuid:loan_id>/return", methods=["POST"])
+@role_required(*STAFF)
 def return_book(loan_id):
     loan = BookLoan.query.filter_by(id=loan_id).first()
     if not loan:
         raise APIException("Loan record not found", status_code=404)
+    ensure_same_tenant(loan.copy.book.institution_id)
 
     if loan.status == "RETURNED":
         raise APIException("Book has already been returned", status_code=400)
