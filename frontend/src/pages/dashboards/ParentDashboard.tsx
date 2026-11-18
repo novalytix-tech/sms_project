@@ -72,8 +72,8 @@ export const ParentDashboard: React.FC = () => {
   const assignments = assignmentService.getByClass(selectedChild.classId, selectedChild.section).slice(0, 4);
   const homeworkSubjects = Array.from(new Set(assignments.map(a => a.subject))).join(', ');
 
-  // Fee summary for selected child
-  const feeSummary = feeService.getParentSummary(selectedChild.id);
+  // Fee summary across this parent's linked children (server-scoped data)
+  const feeSummary = feeService.getMySummary();
   const nextDue = feeSummary.upcomingDue;
 
   // Transport details

@@ -548,7 +548,7 @@ export type PaymentMethodType =
   | 'Cash'
   | 'Cheque'
   | 'Bank Transfer'
-  | 'Online Demand Draft';
+  | 'Demand Draft';
 
 export type TransactionStatus = 'success' | 'failed' | 'cancelled';
 

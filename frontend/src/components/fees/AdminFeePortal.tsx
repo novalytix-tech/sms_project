@@ -34,6 +34,11 @@ export const AdminFeePortal: React.FC = () => {
     };
   }, []);
 
+  // Fee data comes from the backend finance API (cached in feeService).
+  useEffect(() => {
+    feeService.load();
+  }, []);
+
   // All invoices & stats from shared service
   const invoices = useMemo(() => feeService.getAllInvoices(), [storeVersion]);
   const stats: AdminFeeStats = useMemo(() => feeService.getAdminStats(), [storeVersion]);
@@ -88,6 +93,10 @@ export const AdminFeePortal: React.FC = () => {
 
   // Policy edit form
   const [policyForm, setPolicyForm] = useState<FeePolicy>(feePolicy);
+  useEffect(() => {
+    setPolicyForm(feePolicy);
+  }, [feePolicy]);
+  const [saving, setSaving] = useState(false);
 
   // Filtered Invoices
   const filteredInvoices = useMemo(() => {
@@ -164,79 +173,62 @@ export const AdminFeePortal: React.FC = () => {
     addToast('success', 'Export Complete', 'Fee invoices exported to CSV.');
   };
 
-  const handleCreateInvoice = (e: React.FormEvent) => {
+  const handleCreateInvoice = async (e: React.FormEvent) => {
     e.preventDefault();
     const stud = students.find(s => s.id === newInvoiceForm.studentId);
-    if (!stud) return;
-
-    const invoiceNo = `INV/${schoolSettings.academicYear}/${Math.floor(1000 + Math.random() * 9000)}`;
-
-    feeService.createInvoice({
-      invoiceNo,
+    if (!stud || saving) return;
+    setSaving(true);
+    const res = await feeService.createInvoice({
       studentId: stud.id,
-      studentName: stud.fullName,
-      admissionNo: stud.admissionNo,
-      className: stud.className,
-      section: stud.section,
       category: newInvoiceForm.category,
       academicYear: schoolSettings.academicYear,
-      totalAmount: Number(newInvoiceForm.totalAmount),
       dueDate: newInvoiceForm.dueDate,
       allowPartial: newInvoiceForm.allowPartial,
-      invoiceDate: new Date().toISOString().split('T')[0],
-      items: [
-        {
-          id: `item-${Date.now()}`,
-          title: `${newInvoiceForm.category} Fee Component`,
-          category: newInvoiceForm.category,
-          amount: Number(newInvoiceForm.totalAmount),
-        },
-      ],
+      items: [{ title: `${newInvoiceForm.category} Fee`, amount: Number(newInvoiceForm.totalAmount) }],
     });
-
-    addToast('success', 'Fee Invoice Generated', `Invoice ${invoiceNo} created for ${stud.fullName}.`);
-    setIsInvoiceModalOpen(false);
-    setStoreVersion(v => v + 1);
-  };
-
-  const handleRecordManualPayment = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!paymentTargetInvoice) return;
-    setPaymentError('');
-
-    const res = feeService.recordPayment(paymentTargetInvoice.id, {
-      amount: Number(paymentForm.amount),
-      method: paymentForm.method,
-      recordedBy: 'Accounts Office (Staff)',
-      transactionRef: paymentForm.transactionRef || `OFFICE-${Math.floor(100000 + Math.random() * 900000)}`,
-      remarks: paymentForm.remarks,
-    });
-
+    setSaving(false);
     if (!res.success) {
-      setPaymentError(res.error || 'Payment recording failed.');
+      addToast('error', 'Invoice Not Created', res.error);
       return;
     }
-
-    addToast(
-      'success',
-      'Manual Payment Recorded',
-      `Received ${formatCurrencyINR(paymentForm.amount)} for ${paymentTargetInvoice.invoiceNo}.`
-    );
-
-    if (res.payment) {
-      const rc = feeService.getReceiptByReceiptNo(res.payment.receiptNo);
-      if (rc) setPrintReceiptTarget(rc);
-    }
-
-    setPaymentTargetInvoice(null);
-    setStoreVersion(v => v + 1);
+    addToast('success', 'Fee Invoice Generated', `Invoice ${res.data.invoiceNo} created for ${stud.fullName}.`);
+    setIsInvoiceModalOpen(false);
   };
 
-  const handleSavePolicy = (e: React.FormEvent) => {
+  const handleRecordManualPayment = async (e: React.FormEvent) => {
     e.preventDefault();
-    feeService.updateFeePolicy(policyForm);
-    addToast('success', 'Fee Policy Saved', 'School fee regulations and banking details updated.');
-    setStoreVersion(v => v + 1);
+    if (!paymentTargetInvoice || saving) return;
+    setPaymentError('');
+    setSaving(true);
+    const res = await feeService.recordPayment(paymentTargetInvoice.id, {
+      amount: Number(paymentForm.amount),
+      method: paymentForm.method,
+      transactionRef: paymentForm.transactionRef || undefined,
+      remarks: paymentForm.remarks || undefined,
+    });
+    setSaving(false);
+    if (!res.success) {
+      setPaymentError(res.error);
+      return;
+    }
+    addToast(
+      'success',
+      'Payment Recorded',
+      `Received ${formatCurrencyINR(paymentForm.amount)} for ${paymentTargetInvoice.invoiceNo}.`
+    );
+    const rc = feeService.getReceiptByReceiptNo(res.data.receiptNo);
+    if (rc) setPrintReceiptTarget(rc);
+    setPaymentTargetInvoice(null);
+  };
+
+  const handleSavePolicy = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const res = await feeService.updateFeePolicy(policyForm);
+    if (res.success) {
+      addToast('success', 'Fee Policy Saved', 'School fee rules and payment details updated.');
+    } else {
+      addToast('error', 'Policy Not Saved', res.error);
+    }
   };
 
   return (
@@ -284,7 +276,7 @@ export const AdminFeePortal: React.FC = () => {
               {formatCurrencyINR(stats.totalCollected)}
             </span>
             <span className="stat-subtext positive">
-              Online Demo: {formatCurrencyINR(stats.onlineCollected)} • Office: {formatCurrencyINR(stats.manualCollected)}
+              Recorded at school office: {formatCurrencyINR(stats.manualCollected)}
             </span>
           </div>
           <div className="stat-icon-wrapper stat-icon-green">
@@ -559,7 +551,7 @@ export const AdminFeePortal: React.FC = () => {
         </div>
       )}
 
-      {/* TAB 2: ONLINE TRANSACTIONS & DEMO GATEWAY LOGS */}
+      {/* TAB 2: PAYMENT TRANSACTIONS */}
       {adminTab === 'transactions' && (
         <div>
           <div className="filter-toolbar">
@@ -590,7 +582,6 @@ export const AdminFeePortal: React.FC = () => {
                 aria-label="Filter by Payment Channel"
               >
                 <option value="">All Payment Channels</option>
-                <option value="online_demo">Online Portal (Demo)</option>
                 <option value="manual_office">Office Manual Counter</option>
               </select>
             </div>
@@ -639,15 +630,9 @@ export const AdminFeePortal: React.FC = () => {
                       </td>
                       <td>
                         <span className="pay-method-badge">{tx.method}</span>
-                        {tx.channel === 'online_demo' ? (
-                          <span className="badge badge-info" style={{ marginLeft: '6px' }}>
-                            Online Demo
-                          </span>
-                        ) : (
-                          <span className="badge badge-secondary" style={{ marginLeft: '6px' }}>
-                            Office Counter
-                          </span>
-                        )}
+                        <span className="badge badge-secondary" style={{ marginLeft: '6px' }}>
+                          Office Counter
+                        </span>
                       </td>
                       <td style={{ textAlign: 'right', fontWeight: 700 }}>
                         {formatCurrencyINRWithDecimals(tx.amount)}
@@ -1054,10 +1039,11 @@ export const AdminFeePortal: React.FC = () => {
                   setPaymentForm({ ...paymentForm, method: e.target.value as PaymentMethodType })
                 }
               >
+                <option value="UPI">UPI (to school account)</option>
                 <option value="Cash">Cash (Counter)</option>
                 <option value="Cheque">Cheque</option>
                 <option value="Bank Transfer">NEFT / RTGS Bank Transfer</option>
-                <option value="Online Demand Draft">Demand Draft</option>
+                <option value="Demand Draft">Demand Draft</option>
               </select>
             </div>
 

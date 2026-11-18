@@ -1,77 +1,103 @@
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest';
 import { feeService } from './feeService';
-import { ERPStorage } from './storage';
+import { httpClient } from './api/httpClient';
+import { FeeInvoice } from '../types';
 
-describe('feeService Financial Calculations & Workflows', () => {
+const invoice = (over: Partial<FeeInvoice>): FeeInvoice => ({
+  id: 'inv-1',
+  invoiceNo: 'INV-2026-AAAA',
+  studentId: 'stu-1',
+  studentName: 'Aarav Sharma',
+  admissionNo: 'ADM-1',
+  className: 'Class 10',
+  section: 'A',
+  category: 'Tuition',
+  academicYear: '2026-2027',
+  totalAmount: 10000,
+  paidAmount: 0,
+  dueDate: '2030-01-01',
+  status: 'unpaid',
+  payments: [],
+  ...over,
+});
+
+const SERVER_INVOICES = [
+  invoice({ id: 'a', studentId: 'stu-1', totalAmount: 10000, paidAmount: 10000, status: 'paid',
+    payments: [{ id: 'p1', receiptNo: 'REC-1', date: '2026-07-01', amount: 10000, method: 'Cash', recordedBy: 'Office' }] }),
+  invoice({ id: 'b', studentId: 'stu-1', totalAmount: 8000, paidAmount: 3000, status: 'partial', dueDate: '2030-02-01' }),
+  invoice({ id: 'c', studentId: 'stu-2', studentName: 'Diya Patel', totalAmount: 5000, status: 'overdue', dueDate: '2020-01-01' }),
+];
+
+function mockServer() {
+  vi.spyOn(httpClient, 'get').mockImplementation(async (url: string) => {
+    if (url === '/finance/invoices') return { success: true, data: SERVER_INVOICES } as any;
+    if (url === '/finance/payments') return { success: true, data: [] } as any;
+    if (url === '/finance/policy') return { success: true, data: { upiId: 'school@upi' } } as any;
+    return { success: false, data: null, error: { code: 'FORBIDDEN', message: 'no' } } as any;
+  });
+}
+
+describe('feeService (server-backed)', () => {
   beforeEach(() => {
-    localStorage.clear();
-    ERPStorage.reset();
+    feeService.reset();
+    mockServer();
+  });
+  afterEach(() => vi.restoreAllMocks());
+
+  it('loads invoices and policy from the API', async () => {
+    expect(feeService.isLoaded()).toBe(false);
+    await feeService.load();
+    expect(feeService.isLoaded()).toBe(true);
+    expect(feeService.getAllInvoices()).toHaveLength(3);
+    expect(feeService.getFeePolicy().upiId).toBe('school@upi');
+    expect(feeService.getFeeStructures()).toEqual([]); // 403 for non-admins → empty
   });
 
-  it('retrieves all seeded fee invoices', () => {
-    const invoices = feeService.getAllInvoices();
-    expect(Array.isArray(invoices)).toBe(true);
-    expect(invoices.length).toBeGreaterThan(0);
-    expect(invoices[0]).toHaveProperty('totalAmount');
-    expect(invoices[0]).toHaveProperty('paidAmount');
+  it('computes admin stats from server data', async () => {
+    await feeService.load();
+    const s = feeService.getAdminStats();
+    expect(s.totalBilled).toBe(23000);
+    expect(s.totalCollected).toBe(13000);
+    expect(s.totalOutstanding).toBe(10000);
+    expect(s.overdueCount).toBe(1);
+    expect(s.paidCount).toBe(1);
+    expect(s.onlineCollected).toBe(0);
   });
 
-  it('calculates admin fee statistics accurately', () => {
-    const stats = feeService.getAdminStats();
-    expect(stats).toBeDefined();
-    expect(stats.totalBilled).toBeGreaterThan(0);
-    expect(stats.totalCollected).toBeGreaterThanOrEqual(0);
-    expect(stats.totalOutstanding).toBe(stats.totalBilled - stats.totalCollected);
-    expect(stats.collectionRate).toBeGreaterThanOrEqual(0);
-    expect(stats.collectionRate).toBeLessThanOrEqual(100);
+  it('summarises a student and lists billed students', async () => {
+    await feeService.load();
+    const sum = feeService.getParentSummary('stu-1');
+    expect(sum.totalYearFees).toBe(18000);
+    expect(sum.outstandingBalance).toBe(5000);
+    expect(sum.upcomingDue?.invoiceId).toBe('b');
+    expect(feeService.getBilledStudents().map(s => s.id)).toEqual(['stu-1', 'stu-2']);
   });
 
-  it('calculates student fee summary with outstanding balances', () => {
-    const invoices = feeService.getAllInvoices();
-    const studentId = invoices[0].studentId;
-
-    const summary = feeService.getParentSummary(studentId);
-    expect(summary).toBeDefined();
-    expect(summary.totalYearFees).toBeGreaterThan(0);
-    expect(summary.outstandingBalance).toBe(Math.max(0, summary.totalYearFees - summary.totalPaid));
+  it('builds a receipt from server payments, never marked demo', async () => {
+    await feeService.load();
+    const rc = feeService.getReceiptByReceiptNo('REC-1');
+    expect(rc?.amountPaid).toBe(10000);
+    expect(rc?.previousBalance).toBe(10000);
+    expect(rc?.remainingBalance).toBe(0);
+    expect(rc?.isDemo).toBe(false);
   });
 
-  it('records manual payment and updates invoice balance and status', () => {
-    const invoices = feeService.getAllInvoices();
-    const targetInvoice = invoices.find(inv => inv.totalAmount > inv.paidAmount) || invoices[0];
-    const initialPaid = targetInvoice.paidAmount;
-    const paymentAmount = 1000;
-
-    const result = feeService.recordPayment(targetInvoice.id, {
-      amount: paymentAmount,
-      method: 'Net Banking',
-      recordedBy: 'Admin Office',
-      remarks: 'Fee payment via NEFT',
-    });
-
-    expect(result.success).toBe(true);
-    expect(result.invoice).toBeDefined();
-    expect(result.invoice?.paidAmount).toBe(initialPaid + paymentAmount);
-    expect(result.payment?.receiptNo).toMatch(/^REC-/);
-
-    // Verify invoice was updated in storage
-    const updated = feeService.getInvoiceById(targetInvoice.id);
-    expect(updated?.paidAmount).toBe(initialPaid + paymentAmount);
+  it('records a payment on the server and reloads', async () => {
+    const post = vi.spyOn(httpClient, 'post').mockResolvedValue({
+      success: true, data: { invoice: SERVER_INVOICES[1], receiptNo: 'REC-2' },
+    } as any);
+    const res = await feeService.recordPayment('b', { amount: 1000, method: 'Cash' });
+    expect(post).toHaveBeenCalledWith('/finance/invoices/b/pay', { amount: 1000, method: 'Cash' });
+    expect(res.success).toBe(true);
+    expect(feeService.isLoaded()).toBe(true);
   });
 
-  it('rejects manual payment exceeding the remaining balance', () => {
-    const invoices = feeService.getAllInvoices();
-    const target = invoices[0];
-    const remaining = target.totalAmount - target.paidAmount;
-    const excessiveAmount = remaining + 10000;
-
-    const result = feeService.recordPayment(target.id, {
-      amount: excessiveAmount,
-      method: 'Cash',
-      recordedBy: 'Admin Office',
-    });
-
-    expect(result.success).toBe(false);
-    expect(result.error).toContain('cannot exceed remaining balance');
+  it('surfaces server errors instead of faking success', async () => {
+    vi.spyOn(httpClient, 'post').mockResolvedValue({
+      success: false, data: null, error: { code: 'VALIDATION_ERROR', message: 'Payment cannot exceed the remaining balance' },
+    } as any);
+    const res = await feeService.recordPayment('b', { amount: 999999, method: 'Cash' });
+    expect(res.success).toBe(false);
+    if (!res.success) expect(res.error).toMatch(/exceed/);
   });
 });

@@ -8,35 +8,21 @@ import React, { useState, useMemo, useEffect } from 'react';
 import { useERP } from '../../context/ERPContext';
 import { FeeInvoice, Student, PaymentReceipt } from '../../types';
 import { feeService, ParentFeeSummary } from '../../services/feeService';
-import { studentService } from '../../services/studentService';
 import { formatCurrencyINR, formatCurrencyINRWithDecimals, formatDate } from '../../utils/formatters';
-import { PayNowModal } from './PayNowModal';
+import { PaymentInstructionsModal } from './PaymentInstructionsModal';
 import { InvoiceDetailsModal } from './InvoiceDetailsModal';
-import { PaymentConfirmationModal } from './PaymentConfirmationModal';
 import { PrintableReceiptModal } from './PrintableReceiptModal';
 import { EmptyState } from '../common/EmptyState';
 import { SearchInput } from '../common/SearchInput';
 import { IndianRupee, CreditCard, Receipt, FileText, Clock, AlertCircle, CheckCircle2, Users, Printer, Eye, Info, Calendar, Building2 } from 'lucide-react';
 
 export const ParentFeePortal: React.FC = () => {
-  const { currentRole, currentUser, selectedChild, parentChildren, setSelectedChildId, schoolSettings, addToast } = useERP();
+  const { schoolSettings, addToast } = useERP();
 
   // Active Tab: 'invoices' | 'history' | 'policy'
   const [activeTab, setActiveTab] = useState<'invoices' | 'history' | 'policy'>('invoices');
 
-  // Selected Student dynamically resolved
-  const currentStudent: Student | null = useMemo(() => {
-    if (currentRole === 'student') {
-      return (
-        (currentUser.referenceId ? studentService.getById(currentUser.referenceId) : null) ||
-        studentService.getAll().find(s => s.fullName.toLowerCase() === currentUser.name.toLowerCase()) ||
-        null
-      );
-    }
-    return selectedChild || parentChildren[0] || null;
-  }, [currentRole, currentUser, selectedChild, parentChildren]);
-
-  // Store trigger for auto-updating when localStorage changes
+  // Store trigger: re-render when fee data arrives from the server
   const [storeVersion, setStoreVersion] = useState(0);
 
   useEffect(() => {
@@ -44,10 +30,30 @@ export const ParentFeePortal: React.FC = () => {
       setStoreVersion(v => v + 1);
     };
     window.addEventListener('nts_erp_storage_updated', handleStorageUpdate);
+    feeService.load();
     return () => {
       window.removeEventListener('nts_erp_storage_updated', handleStorageUpdate);
     };
   }, []);
+
+  // The server returns only invoices of this parent's linked children (or the student's own),
+  // so the children shown here come straight from those records.
+  const billedStudents = useMemo(() => feeService.getBilledStudents(), [storeVersion]);
+  const [selectedStudentId, setSelectedStudentId] = useState<string>('');
+  const currentStudent: Student | null = useMemo(() => {
+    const b = billedStudents.find(x => x.id === selectedStudentId) || billedStudents[0];
+    if (!b) return null;
+    const [firstName, ...rest] = b.name.split(' ');
+    return {
+      id: b.id,
+      fullName: b.name,
+      firstName,
+      lastName: rest.join(' '),
+      className: b.className,
+      section: b.section,
+      admissionNo: b.admissionNo,
+    } as Student;
+  }, [billedStudents, selectedStudentId]);
 
   // Summary statistics for selected student
   const summary: ParentFeeSummary | null = useMemo(() => {
@@ -85,7 +91,6 @@ export const ParentFeePortal: React.FC = () => {
   // Interactive Modals State
   const [checkoutTarget, setCheckoutTarget] = useState<FeeInvoice | null>(null);
   const [detailsTarget, setDetailsTarget] = useState<FeeInvoice | null>(null);
-  const [confirmedReceipt, setConfirmedReceipt] = useState<PaymentReceipt | null>(null);
   const [printReceiptTarget, setPrintReceiptTarget] = useState<PaymentReceipt | null>(null);
 
   // Filtered Invoices
@@ -137,24 +142,17 @@ export const ParentFeePortal: React.FC = () => {
     }
   };
 
-  const handlePaymentSuccess = (receipt: PaymentReceipt) => {
-    setCheckoutTarget(null);
-    setConfirmedReceipt(receipt);
-    setStoreVersion(v => v + 1);
-    addToast(
-      'success',
-      'Payment Realized (Demo)',
-      `Receipt ${receipt.receiptNo} generated for ${formatCurrencyINR(receipt.amountPaid)}`
-    );
-  };
+  if (!feeService.isLoaded()) {
+    return <div style={{ padding: '40px 20px' }}>Loading fee records…</div>;
+  }
 
   if (!currentStudent || !summary) {
     return (
       <div style={{ padding: '40px 20px' }}>
         <EmptyState
           icon={<Users size={32} />}
-          title="No Student Ward Linked"
-          description="There is currently no student profile linked to your authenticated account credentials. Please contact the admissions and accounts office."
+          title="No Fee Records"
+          description={feeService.getLoadError() || 'No fee invoices have been issued for your linked student yet. Please contact the school accounts office if this looks wrong.'}
         />
       </div>
     );
@@ -167,26 +165,26 @@ export const ParentFeePortal: React.FC = () => {
         <div className="page-title-group">
           <h1>Fees & Payments</h1>
           <p className="page-subtitle">
-            Fee schedules, online payment, and payment history
+            Fee schedules, payment instructions, and payment history
           </p>
         </div>
 
         {/* Linked Ward Selector */}
-        {parentChildren.length > 1 && (
+        {billedStudents.length > 1 && (
           <div className="ward-selector-box">
             <span className="ward-selector-label">
               <Users size={14} /> Linked Ward:
             </span>
             <div className="ward-buttons-group">
-              {parentChildren.map(child => (
+              {billedStudents.map(child => (
                 <button
                   key={child.id}
                   type="button"
-                  onClick={() => setSelectedChildId(child.id)}
+                  onClick={() => setSelectedStudentId(child.id)}
                   className={`ward-pill-btn ${currentStudent.id === child.id ? 'active' : ''}`}
                 >
                   <span className="ward-dot" />
-                  <strong>{child.firstName}</strong>
+                  <strong>{child.name.split(' ')[0]}</strong>
                   <span className="ward-class-badge">Class {child.className}</span>
                 </button>
               ))}
@@ -449,7 +447,7 @@ export const ParentFeePortal: React.FC = () => {
                                 style={{ padding: '5px 12px', fontSize: '12px' }}
                               >
                                 <CreditCard size={13} />
-                                <span>Pay Now</span>
+                                <span>How to Pay</span>
                               </button>
                             ) : null}
 
@@ -540,7 +538,7 @@ export const ParentFeePortal: React.FC = () => {
                 <option value="Credit Card">Credit Card</option>
                 <option value="Net Banking">Net Banking</option>
                 <option value="Bank Transfer">Bank Transfer</option>
-                <option value="Online Demand Draft">Demand Draft</option>
+                <option value="Demand Draft">Demand Draft</option>
               </select>
             </div>
 
@@ -759,14 +757,12 @@ export const ParentFeePortal: React.FC = () => {
       {/* =========================================================
           MODALS
           ========================================================= */}
-      {/* 1. Pay Now Checkout Modal */}
+      {/* 1. How to pay: school's payment instructions (no online gateway yet) */}
       {checkoutTarget && (
-        <PayNowModal
+        <PaymentInstructionsModal
           invoice={checkoutTarget}
-          student={currentStudent}
-          schoolName={schoolSettings.schoolName}
           policy={feePolicy}
-          onSuccess={handlePaymentSuccess}
+          schoolName={schoolSettings.schoolName}
           onClose={() => setCheckoutTarget(null)}
         />
       )}
@@ -780,24 +776,6 @@ export const ParentFeePortal: React.FC = () => {
           onPayNow={inv => handleOpenCheckout(inv)}
           onViewReceipt={receiptNo => handleViewReceiptFromHistory(receiptNo)}
           onClose={() => setDetailsTarget(null)}
-        />
-      )}
-
-      {/* 3. Payment Confirmation Screen */}
-      {confirmedReceipt && (
-        <PaymentConfirmationModal
-          receipt={confirmedReceipt}
-          onPrintReceipt={() => {
-            const rc = confirmedReceipt;
-            setConfirmedReceipt(null);
-            setPrintReceiptTarget(rc);
-          }}
-          onViewInvoice={invId => {
-            setConfirmedReceipt(null);
-            const inv = feeService.getInvoiceById(invId);
-            if (inv) setDetailsTarget(inv);
-          }}
-          onClose={() => setConfirmedReceipt(null)}
         />
       )}
 

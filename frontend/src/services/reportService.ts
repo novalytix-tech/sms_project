@@ -5,6 +5,7 @@
 // ==========================================
 
 import { ERPStorage } from './storage';
+import { feeService } from './feeService';
 import { institutionService } from './institutionService';
 import { serviceEntitlementService } from './serviceEntitlementService';
 import { schoolMigrationService, MigrationAuditResult } from './schoolMigrationService';
@@ -305,8 +306,8 @@ export const reportService = {
    * Fee Collections & Outstanding Dues Report
    */
   getFeeReport: (filters: ReportFilters): FeeReportSummary => {
-    const store = ERPStorage.get();
-    let invoices = reportService.filterBySchool(store.feeInvoices || [], filters.schoolId);
+    // Invoices are already scoped to the signed-in user's school by the backend.
+    let invoices = feeService.getAllInvoices();
 
     if (filters.academicYear) {
       invoices = invoices.filter(i => i.academicYear === filters.academicYear);

@@ -154,6 +154,14 @@ export const ERPProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setSchoolSettings(settingsService.get());
   }, []);
 
+  // Fees come from the backend finance API for admins, parents and students.
+  useEffect(() => {
+    if (isAuthenticated && ['super_admin', 'school_admin', 'parent', 'student'].includes(currentRole)) {
+      feeService.load();
+    }
+    if (!isAuthenticated) feeService.reset();
+  }, [isAuthenticated, currentRole]);
+
   // Hydrate shared records from the backend for staff accounts.
   useEffect(() => {
     if (isAuthenticated && ['super_admin', 'school_admin', 'teacher'].includes(currentRole)) {

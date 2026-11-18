@@ -7,7 +7,6 @@
 import { AdmissionApplication, AdmissionStage, AdmissionDocument, AdmissionChecklist, Student, PaymentMethodType, AdmissionEnquiry, AdmissionFollowUp, AdmissionAssessment, AdmissionOffer, ClassAdmissionCapacity, AdmissionAuditLog, LostReason } from '../types';
 import { ERPStorage } from './storage';
 import { studentService } from './studentService';
-import { feeService } from './feeService';
 import { classService } from './classService';
 
 import { INITIAL_CLASS_CAPACITIES } from '../data/admissionSeedData';
@@ -454,7 +453,7 @@ export const admissionService = {
   },
 
   /**
-   * Record Admission Fee Payment (handles full and partial payments, integrates with feeService)
+   * Record Admission Fee Payment (handles full and partial payments on the application)
    */
   recordAdmissionFee: (
     applicationId: string,
@@ -487,50 +486,8 @@ export const admissionService = {
     const now = new Date();
     const dateStr = now.toISOString().split('T')[0];
 
-    // Generate or reuse Fee Invoice in feeService (strictly idempotent)
-    let invoice = feeService.getInvoiceById(app.feeInvoiceId || '');
-    if (!invoice) {
-      const studentInvoices = feeService.getInvoicesByStudentId(app.id);
-      invoice = studentInvoices.find(inv => inv.category === 'Admission');
-    }
-    if (!invoice) {
-      invoice = feeService.getAllInvoices().find(
-        inv => inv.invoiceNo === invoiceNo || inv.admissionNo === app.applicationNo
-      );
-    }
-
-    if (!invoice) {
-      invoice = feeService.createInvoice({
-        invoiceNo,
-        studentId: app.id,
-        studentName: `${app.firstName} ${app.lastName}`,
-        admissionNo: app.applicationNo,
-        className: app.targetClassName,
-        section: app.targetSection || 'A',
-        category: 'Admission',
-        academicYear,
-        totalAmount: totalFee,
-        dueDate: dateStr,
-        allowPartial: true,
-        items: [
-          {
-            id: `item-adm-${Date.now()}`,
-            title: `New Admission & Registration Fee (${app.targetClassName})`,
-            category: 'Admission',
-            amount: totalFee,
-          },
-        ],
-      });
-    }
-
-    // Record Simulated Demo Payment
-    feeService.recordPayment(invoice.id, {
-      amount: payAmount,
-      method: paymentMethod,
-      transactionRef: `ADM-TXN-${Date.now().toString().slice(-6)}`,
-      recordedBy,
-      remarks: remarks || `Admission Fee for ${app.applicationNo}`,
-    });
+    // Admission fees are tracked on the application record only (demo admissions module).
+    // Real student fee invoices live in the backend finance API (services/feeService.ts).
 
     const newTotalPaid = currentPaid + payAmount;
     const newOutstanding = totalFee - newTotalPaid;
@@ -539,7 +496,6 @@ export const admissionService = {
     app.feeAmountPaid = newTotalPaid;
     app.feeOutstanding = newOutstanding;
     app.isFeePaid = isFullyPaid;
-    app.feeInvoiceId = invoice.id;
     app.checklist.feeCleared = isFullyPaid;
     app.paymentStatus = isFullyPaid ? 'Paid' : 'Partially Paid';
 
@@ -580,7 +536,7 @@ export const admissionService = {
       details: `Received ₹${payAmount.toLocaleString('en-IN')} via ${paymentMethod} (Receipt: ${receiptNo}).`,
     });
 
-    return { success: true, data: app, invoiceNo: invoice.invoiceNo, receiptNo };
+    return { success: true, data: app, invoiceNo, receiptNo };
   },
 
   /**

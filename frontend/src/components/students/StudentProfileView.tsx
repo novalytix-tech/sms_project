@@ -18,7 +18,7 @@ import { libraryService } from '../../services/libraryService';
 import { gradingService } from '../../services/gradingService';
 import { Badge } from '../common/Badge';
 import { EmptyState } from '../common/EmptyState';
-import { PayNowModal } from '../fees/PayNowModal';
+import { PaymentInstructionsModal } from '../fees/PaymentInstructionsModal';
 import { formatDate, formatCurrencyINR } from '../../utils/formatters';
 import { CalendarCheck, FileText, Award, Clock, IndianRupee, Phone, Mail, ShieldAlert, Users, ExternalLink, LayoutGrid, List, DoorOpen, User } from 'lucide-react';
 import { DAYS, PERIOD_SLOTS, LUNCH_BREAK, getSubjectTheme } from '../../utils/timetableConstants';
@@ -1313,17 +1313,13 @@ export const StudentProfileView: React.FC<StudentProfileViewProps> = ({
         </div>
       )}
 
-      {/* Online Payment Modal */}
+      {/* How to pay (no online gateway yet) */}
       {payingInvoice && (
-        <PayNowModal
+        <PaymentInstructionsModal
           invoice={payingInvoice}
-          student={student}
-          schoolName="St. Xavier's International Academy"
+          schoolName="School"
           policy={feeService.getFeePolicy()}
           onClose={() => setPayingInvoice(null)}
-          onSuccess={() => {
-            setPayingInvoice(null);
-          }}
         />
       )}
     </div>

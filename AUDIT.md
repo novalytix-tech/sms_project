@@ -42,8 +42,12 @@ unused packages (`@xyflow/react`, `date-fns`, `recharts`, `@testing-library/user
 - Account management (create account + Clerk invite, activate/deactivate, resend invite)
 - Students: add, edit, bulk CSV import (writes to DB); staff see DB students via `/sync/store`
 - Website admission enquiry form (public) and the admin's list of web leads
-- Fee payment recording (admin only)
-- Read-only hydration for staff of classes, teachers, invoices, books, notices, transport routes
+- **Fees & invoicing (migrated 2026-11-19):** invoices, office payment recording, receipts, payment
+  history, fee policy (UPI/bank details) and fee structures all live in the database. Parents see only their
+  linked children's invoices, students only their own, teachers none. The browser-side fee demo data and the
+  fake "online payment" simulator were removed; parents get the school's payment instructions instead.
+  Online payment requires integrating a gateway (e.g. Razorpay) with signed webhooks — not done yet.
+- Read-only hydration for staff of classes, teachers, books, notices, transport routes
 
 **Still demo-only — data lives in each browser's localStorage, seeded from `frontend/src/data/seedData.ts`:**
 
@@ -60,14 +64,14 @@ For most of them the backend already has matching tables and secured endpoints
 and then deleting its localStorage code. The temporary bridge for these modules is
 `frontend/src/data/legacyReferenceIds.ts`; delete it once the last module is migrated.
 
-Recommended order (highest business risk first): fees/invoices → attendance → examinations & results →
+Recommended order (highest business risk first): ~~fees/invoices~~ (done) → attendance → examinations & results →
 library → notices & messages → leave → timetable → transport → everything else.
 
 ## 4. Verification done
 
-- Backend: 58 automated tests pass (auth, forged/expired/foreign-origin tokens, unprovisioned and deactivated users,
+- Backend: 70 automated tests pass (12 of them for fees) (auth, forged/expired/foreign-origin tokens, unprovisioned and deactivated users,
   role checks, parent–child access, cross-school isolation, header spoofing, public enquiry, plus the existing module and workflow tests).
-- Frontend: type-check clean, 218 unit tests pass (Clerk mocked), production build succeeds.
+- Frontend: type-check clean, 219 unit tests pass (Clerk mocked), production build succeeds.
 - Production bundle scanned: no demo passwords, no `sk_` keys, no token storage keys, no source maps, no `console.log`.
 - Running locally: `/health` 200; protected routes 401 without a token or with a forged token; no CORS for unknown origins;
   security headers present; database migrations apply cleanly and match the models; RLS enabled on all 87 tables.

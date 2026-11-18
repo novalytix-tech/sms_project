@@ -31,7 +31,6 @@ export const PrintableReceiptModal: React.FC<PrintableReceiptModalProps> = ({ re
               <CheckCircle2 size={14} color="#16a34a" />
               <span>Official Fee Receipt</span>
             </span>
-            <span className="receipt-mode-pill">DEMO PAYMENT RECORD</span>
           </div>
 
           <div className="receipt-actions-right">
@@ -58,10 +57,6 @@ export const PrintableReceiptModal: React.FC<PrintableReceiptModalProps> = ({ re
 
         {/* The Printable A4 Sheet */}
         <div className="printable-receipt-sheet" id="printable-fee-receipt">
-          {/* Subtle Watermark */}
-          <div className="receipt-watermark" aria-hidden="true">
-            DEMO RECEIPT • NOT A REAL FINANCIAL TRANSACTION
-          </div>
 
           {/* Institutional Header */}
           <header className="receipt-header-row">
@@ -227,10 +222,6 @@ export const PrintableReceiptModal: React.FC<PrintableReceiptModalProps> = ({ re
               <ul className="terms-list">
                 <li>This is an authentic computer-generated digital receipt and requires no physical signature.</li>
                 <li>Fees once paid are non-refundable and non-transferable under school management policy.</li>
-                <li>
-                  <strong>Demo Mode Notice:</strong> This transaction was processed in school ERP demo simulation
-                  mode. No real currency has been transferred.
-                </li>
               </ul>
             </div>
 
