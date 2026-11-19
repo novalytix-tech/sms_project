@@ -41,6 +41,8 @@ unused packages (`@xyflow/react`, `date-fns`, `recharts`, `@testing-library/user
 
 - Sign-in, user profile, roles, school (tenant) — Clerk + `/auth/me`
 - Account management (create account + Clerk invite, activate/deactivate, resend invite)
+- **Bulk invite from CSV** (up to 500 people per file; each row created or skipped with a reason) and
+  **parent-child linking** by admission number. Student logins attach to the existing student record.
 - Students: add, edit, bulk CSV import (writes to DB); staff see DB students via `/sync/store`
 - Website admission enquiry form (public) and the admin's list of web leads
 - **Fees & invoicing (migrated 2026-11-19):** invoices, office payment recording, receipts, payment
@@ -79,9 +81,9 @@ library → notices & messages → leave → timetable → transport → everyth
 
 ## 4. Verification done
 
-- Backend: 84 automated tests pass (12 fees, 8 attendance, 9 examinations) (auth, forged/expired/foreign-origin tokens, unprovisioned and deactivated users,
+- Backend: 91 automated tests pass (12 fees, 8 attendance, 9 examinations, 7 accounts) (auth, forged/expired/foreign-origin tokens, unprovisioned and deactivated users,
   role checks, parent–child access, cross-school isolation, header spoofing, public enquiry, plus the existing module and workflow tests).
-- Frontend: type-check clean, 225 unit tests pass (Clerk mocked), production build succeeds.
+- Frontend: type-check clean, 227 unit tests pass (Clerk mocked), production build succeeds.
 - Production bundle scanned: no demo passwords, no `sk_` keys, no token storage keys, no source maps, no `console.log`.
 - Running locally: `/health` 200; protected routes 401 without a token or with a forged token; no CORS for unknown origins;
   security headers present; database migrations apply cleanly and match the models; RLS enabled on all 87 tables.

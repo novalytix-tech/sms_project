@@ -6,6 +6,8 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { accountService, UserAccountItem } from '../../services/accountService';
 import { Modal } from '../../components/common/Modal';
+import { BulkInviteModal } from '../../components/accounts/BulkInviteModal';
+import { ParentChildrenModal } from '../../components/accounts/ParentChildrenModal';
 import { Badge } from '../../components/common/Badge';
 import { SearchInput } from '../../components/common/SearchInput';
 import { Pagination } from '../../components/common/Pagination';
@@ -13,7 +15,7 @@ import { EmptyState } from '../../components/common/EmptyState';
 import { useERP } from '../../context/ERPContext';
 import { UserRole } from '../../types';
 
-import { ShieldCheck, UserPlus, Mail, RotateCcw, Lock, Unlock, Users, CheckCircle, AlertTriangle } from 'lucide-react';
+import { ShieldCheck, UserPlus, Mail, Upload, Baby, RotateCcw, Lock, Unlock, Users, CheckCircle, AlertTriangle } from 'lucide-react';
 
 export const AccountManagementPage: React.FC = () => {
   const { addToast } = useERP();
@@ -37,7 +39,11 @@ export const AccountManagementPage: React.FC = () => {
     email: '',
     phone: '',
     role: 'student' as UserRole,
+    admissionNumber: '',
+    childAdmissionNumbers: '',
   });
+  const [isBulkOpen, setIsBulkOpen] = useState(false);
+  const [childrenTarget, setChildrenTarget] = useState<UserAccountItem | null>(null);
 
   const loadAccounts = async () => {
     setLoading(true);
@@ -83,7 +89,7 @@ export const AccountManagementPage: React.FC = () => {
       return;
     }
     setIsAddOpen(false);
-    setNewForm({ firstName: '', lastName: '', email: '', phone: '', role: 'student' });
+    setNewForm({ firstName: '', lastName: '', email: '', phone: '', role: 'student', admissionNumber: '', childAdmissionNumbers: '' });
     loadAccounts();
     if (res.data.invitation_status === 'invited') {
       addToast('success', 'Account Created', `Sign-in invitation emailed to ${res.data.email}.`);
@@ -122,6 +128,10 @@ export const AccountManagementPage: React.FC = () => {
           </p>
         </div>
         <div className="page-actions">
+          <button className="btn btn-secondary" onClick={() => setIsBulkOpen(true)}>
+            <Upload size={16} />
+            <span>Bulk Invite (CSV)</span>
+          </button>
           <button className="btn btn-primary" onClick={() => setIsAddOpen(true)}>
             <UserPlus size={16} />
             <span>Create User Account</span>
@@ -354,6 +364,18 @@ export const AccountManagementPage: React.FC = () => {
                             </button>
                           )}
 
+                          {acc.roles.includes('parent') && (
+                            <button
+                              type="button"
+                              className="btn btn-secondary btn-sm"
+                              title="Link or unlink this parent's children"
+                              onClick={() => setChildrenTarget(acc)}
+                            >
+                              <Baby size={13} />
+                              <span>Children</span>
+                            </button>
+                          )}
+
                           <button
                             type="button"
                             className={`btn btn-sm ${acc.status === 'active' ? 'btn-secondary' : 'btn-primary'}`}
@@ -437,6 +459,32 @@ export const AccountManagementPage: React.FC = () => {
             </div>
           </div>
 
+          {newForm.role === 'student' && (
+            <div className="form-group" style={{ marginBottom: '14px' }}>
+              <label className="form-label required">Student Admission Number</label>
+              <input
+                type="text"
+                className="form-input"
+                placeholder="e.g. ADM-2026-1001 (links the login to this student's record)"
+                value={newForm.admissionNumber}
+                onChange={e => setNewForm({ ...newForm, admissionNumber: e.target.value })}
+                required
+              />
+            </div>
+          )}
+          {newForm.role === 'parent' && (
+            <div className="form-group" style={{ marginBottom: '14px' }}>
+              <label className="form-label">Children's Admission Numbers</label>
+              <input
+                type="text"
+                className="form-input"
+                placeholder="e.g. ADM-2026-0601; ADM-2026-0602"
+                value={newForm.childAdmissionNumbers}
+                onChange={e => setNewForm({ ...newForm, childAdmissionNumbers: e.target.value })}
+              />
+            </div>
+          )}
+
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px', marginBottom: '18px' }}>
             <div className="form-group">
               <label className="form-label">Mobile Number (Optional)</label>
@@ -490,6 +538,8 @@ export const AccountManagementPage: React.FC = () => {
         </form>
       </Modal>
 
+      <BulkInviteModal isOpen={isBulkOpen} onClose={() => setIsBulkOpen(false)} onDone={loadAccounts} />
+      {childrenTarget && <ParentChildrenModal parent={childrenTarget} onClose={() => setChildrenTarget(null)} />}
     </div>
   );
 };

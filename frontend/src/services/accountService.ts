@@ -24,6 +24,36 @@ export interface UserAccountItem {
   last_login_at?: string | null;
 }
 
+export interface BulkInviteRow {
+  first_name: string;
+  last_name: string;
+  email: string;
+  role: string;
+  phone?: string;
+  admission_number?: string;
+  child_admission_numbers?: string;
+  relationship?: string;
+}
+
+export interface BulkInviteResult {
+  row: number;
+  email: string;
+  name: string;
+  role: string;
+  status: 'created' | 'skipped';
+  reason: string | null;
+  invitation_status?: 'invited' | 'invite_failed';
+}
+
+export interface LinkedChild {
+  student_id: string;
+  admission_number: string;
+  name: string;
+  class_name: string;
+  section: string;
+  is_primary: boolean;
+}
+
 type Result<T = undefined> = { success: true; data: T } | { success: false; error: string };
 
 const fail = (res: any, fallback: string) =>
@@ -45,6 +75,8 @@ export const accountService = {
     email: string;
     phone?: string;
     role: UserRole;
+    admissionNumber?: string;
+    childAdmissionNumbers?: string;
   }): Promise<Result<UserAccountItem>> => {
     const res = await httpClient.post<UserAccountItem>('/users', {
       first_name: data.firstName,
@@ -52,8 +84,35 @@ export const accountService = {
       email: data.email,
       phone: data.phone,
       role: data.role,
+      admission_number: data.admissionNumber,
+      child_admission_numbers: data.childAdmissionNumbers,
     });
     return res.success && res.data ? { success: true, data: res.data } : fail(res, 'Failed to create the account.');
+  },
+
+  bulkInvite: async (
+    rows: BulkInviteRow[],
+  ): Promise<Result<{ created: number; skipped: number; invitations_failed: number; results: BulkInviteResult[] }>> => {
+    const res = await httpClient.post<{ created: number; skipped: number; invitations_failed: number; results: BulkInviteResult[] }>(
+      '/users/bulk-invite',
+      { rows },
+    );
+    return res.success ? { success: true, data: res.data } : fail(res, 'Bulk invite failed.');
+  },
+
+  getChildren: async (userId: string): Promise<Result<LinkedChild[]>> => {
+    const res = await httpClient.get<LinkedChild[]>(`/users/${userId}/children`);
+    return res.success ? { success: true, data: res.data } : fail(res, 'Could not load linked children.');
+  },
+
+  linkChild: async (userId: string, admissionNumber: string): Promise<Result<LinkedChild[]>> => {
+    const res = await httpClient.post<LinkedChild[]>(`/users/${userId}/children`, { admission_number: admissionNumber });
+    return res.success ? { success: true, data: res.data } : fail(res, 'Could not link the child.');
+  },
+
+  unlinkChild: async (userId: string, studentId: string): Promise<Result<LinkedChild[]>> => {
+    const res = await httpClient.delete<LinkedChild[]>(`/users/${userId}/children/${studentId}`);
+    return res.success ? { success: true, data: res.data } : fail(res, 'Could not unlink the child.');
   },
 
   toggleAccountStatus: async (userId: string): Promise<Result<UserAccountItem>> => {

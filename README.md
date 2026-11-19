@@ -20,6 +20,17 @@
 5. Every API call carries a short-lived Clerk session token, which the backend verifies.
    All routes require it except `GET /api/v1/health` and `POST /api/v1/admissions/inquiries`.
 
+## Giving people access (many users)
+
+- **User Accounts & Auth → Bulk Invite (CSV)**: download the template, fill one row per person
+  (`first_name, last_name, email, role, phone, admission_number, child_admission_numbers, relationship`),
+  upload. Everyone gets an invitation email and sets their own password.
+- **Parents**: put their children's admission numbers (separated by `;`). Parents only ever see linked
+  children; links can be changed later with the **Children** button on the parent's row.
+- **Students**: optional (usually only senior classes). Give the admission number so the login attaches to
+  the existing student record.
+- Nobody's password is known to the school. "Forgot password" on the sign-in page is handled by Clerk.
+
 ## Run locally
 
 Prerequisites: Python 3.12, Node 20+, PostgreSQL (Docker or a local install), and a free
