@@ -18,6 +18,8 @@ database password or API key that was ever committed or shared.
    accounts by *verified* email only).
 4. Copy **Publishable key** (`pk_live_…`, frontend) and **Secret key** (`sk_live_…`, backend only).
 5. After Vercel is deployed, add the frontend domain under **Domains / Allowed origins**.
+6. Invitation emails link to `FRONTEND_URL/sign-up`. `FRONTEND_URL` on Render **must be the public Vercel URL**;
+   if it is `http://localhost:5173`, invited people get "site can't be reached" on their own phone/computer.
 
 ## 2. Supabase (database)
 

@@ -62,7 +62,7 @@ def _get_user_in_tenant(user_id: str) -> User:
 
 def _send_invite(email: str) -> str:
     try:
-        create_invitation(email, redirect_url=f"{current_app.config['FRONTEND_URL']}/login")
+        create_invitation(email, redirect_url=f"{current_app.config['FRONTEND_URL']}/sign-up")
         return "invited"
     except requests.RequestException:
         current_app.logger.exception("Clerk invitation failed for a new account")

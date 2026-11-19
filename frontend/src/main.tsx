@@ -19,7 +19,7 @@ if (!publishableKey) {
 } else {
   root.render(
     <StrictMode>
-      <ClerkProvider publishableKey={publishableKey} signInUrl="/login" afterSignOutUrl="/login">
+      <ClerkProvider publishableKey={publishableKey} signInUrl="/login" signUpUrl="/sign-up" afterSignOutUrl="/login">
         <App />
       </ClerkProvider>
     </StrictMode>,

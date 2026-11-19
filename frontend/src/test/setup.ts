@@ -55,7 +55,8 @@ vi.mock('@clerk/react', () => ({
     getToken: async () => (authState.signedIn ? 'test-token' : null),
   }),
   useClerk: () => ({ signOut: vi.fn(async () => signOutTest()) }),
-  SignIn: () => null,
+  SignIn: () => 'CLERK_SIGN_IN',
+  SignUp: () => 'CLERK_SIGN_UP',
   ClerkProvider: ({ children }: { children: unknown }) => children,
 }));
 

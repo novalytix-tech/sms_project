@@ -1,5 +1,5 @@
 import React from 'react';
-import { Navigate } from 'react-router-dom';
+import { Navigate, useLocation } from 'react-router-dom';
 import { SignIn } from '@clerk/react';
 import { useERP } from '../../context/ERPContext';
 
@@ -10,6 +10,13 @@ import { useERP } from '../../context/ERPContext';
  */
 export const LoginPage: React.FC = () => {
   const { authStatus, authError, logout } = useERP();
+  const location = useLocation();
+
+  // Invitation links carry a Clerk ticket; accepting one is a sign-up, not a sign-in.
+  const params = new URLSearchParams(location.search);
+  if (params.get('__clerk_ticket') && params.get('__clerk_status') === 'sign_up') {
+    return <Navigate to={`/sign-up${location.search}`} replace />;
+  }
 
   if (authStatus === 'ready') {
     return <Navigate to="/" replace />;

@@ -8,6 +8,7 @@ import { createBrowserRouter } from 'react-router-dom';
 import { AppLayout } from '../layouts/AppLayout';
 import { ProtectedRoute } from '../components/common/ProtectedRoute';
 import { LoginPage } from '../pages/auth/LoginPage';
+import { SignUpPage } from '../pages/auth/SignUpPage';
 import { AdmissionEnquiryPage } from '../pages/public/AdmissionEnquiryPage';
 const DashboardRouter = lazy(() => import('../pages/dashboards/DashboardRouter').then(m => ({ default: m.DashboardRouter })));
 const AdmissionsPage = lazy(() => import('../pages/admissions/AdmissionsPage').then(m => ({ default: m.AdmissionsPage })));
@@ -44,6 +45,10 @@ export const router = createBrowserRouter([
   {
     path: '/login/*',
     element: <LoginPage />,
+  },
+  {
+    path: '/sign-up/*',
+    element: <SignUpPage />,
   },
   {
     path: '/admission-enquiry',
