@@ -3,7 +3,7 @@ from datetime import date, time
 from decimal import Decimal
 from typing import Optional, List
 from sqlalchemy import (
-    String, Text, Numeric, Date, Time, UniqueConstraint, CheckConstraint, ForeignKey
+    Boolean, String, Text, Numeric, Date, Time, UniqueConstraint, CheckConstraint, ForeignKey
 )
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
@@ -41,6 +41,13 @@ class Exam(TenantModel):
         ForeignKey("terms.id", ondelete="SET NULL"),
         nullable=True,
     )
+    # Class-section this exam is held for (one exam per section, as the school manages them).
+    section_id: Mapped[Optional[uuid.UUID]] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("sections.id", ondelete="CASCADE"),
+        nullable=True,
+        index=True,
+    )
     name: Mapped[str] = mapped_column(String(100), nullable=False)
     exam_type: Mapped[str] = mapped_column(String(50), default="SUMMATIVE", nullable=False)
     start_date: Mapped[date] = mapped_column(Date, nullable=False)
@@ -49,10 +56,11 @@ class Exam(TenantModel):
 
     academic_year: Mapped["AcademicYear"] = relationship("AcademicYear")
     term: Mapped[Optional["Term"]] = relationship("Term")
+    section: Mapped[Optional["Section"]] = relationship("Section")
     schedules: Mapped[List["ExamSchedule"]] = relationship("ExamSchedule", back_populates="exam", cascade="all, delete-orphan")
 
     __table_args__ = (
-        UniqueConstraint("institution_id", "academic_year_id", "name", name="uq_institution_exam_name"),
+        UniqueConstraint("institution_id", "academic_year_id", "section_id", "name", name="uq_institution_exam_section_name"),
         CheckConstraint("start_date <= end_date", name="chk_exam_dates"),
     )
 
@@ -84,6 +92,7 @@ class ExamSchedule(BaseModel):
         ForeignKey("rooms.id", ondelete="SET NULL"),
         nullable=True,
     )
+    room_label: Mapped[Optional[str]] = mapped_column(String(50), nullable=True)
     exam_date: Mapped[date] = mapped_column(Date, nullable=False)
     start_time: Mapped[time] = mapped_column(Time, nullable=False)
     end_time: Mapped[time] = mapped_column(Time, nullable=False)
@@ -120,6 +129,7 @@ class ExamResult(BaseModel):
         index=True,
     )
     marks_obtained: Mapped[Decimal] = mapped_column(Numeric(5, 2), nullable=False)
+    is_absent: Mapped[bool] = mapped_column(Boolean, default=False, server_default="false", nullable=False)
     grade: Mapped[Optional[str]] = mapped_column(String(10), nullable=True)
     remarks: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     evaluated_by: Mapped[Optional[uuid.UUID]] = mapped_column(

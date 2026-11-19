@@ -801,6 +801,27 @@ def seed_database(app=None):
                 db.session.flush()
                 db.session.add(FeeInvoiceItem(invoice_id=inv.id, fee_head=f"Tuition Fee - {term}", amount=amount))
 
+        # -------------------------------------------------------------
+        # 14. Demo exam for Class 10-A (local development only)
+        # -------------------------------------------------------------
+        from app.models import Exam, ExamSchedule
+        if not Exam.query.filter_by(institution_id=inst.id, section_id=sec_10a.id, name="Mid-Term Examination").first():
+            demo_exam = Exam(
+                institution_id=inst.id, academic_year_id=ay.id, section_id=sec_10a.id,
+                name="Mid-Term Examination", exam_type="Mid-Term",
+                start_date=date(2026, 12, 1), end_date=date(2026, 12, 10), status="SCHEDULED",
+            )
+            db.session.add(demo_exam)
+            db.session.flush()
+            for sub_name, day in (("Mathematics", 1), ("Science", 3), ("English", 5)):
+                sub = Subject.query.filter(Subject.institution_id == inst.id, Subject.name.ilike(f"{sub_name}%")).first()
+                if sub:
+                    db.session.add(ExamSchedule(
+                        exam_id=demo_exam.id, class_level_id=sec_10a.class_level_id, subject_id=sub.id,
+                        exam_date=date(2026, 12, day), start_time=time(9, 0), end_time=time(12, 0),
+                        max_marks=Decimal("80"), passing_marks=Decimal("27"), room_label="Hall A",
+                    ))
+
         # Commit all seeded data
         db.session.commit()
         print("[OK] Database seeding completed successfully! Exactly 30 students and supporting accounts verified.")
