@@ -7,6 +7,7 @@
 import { ERPStorage } from './storage';
 import { feeService } from './feeService';
 import { attendanceService } from './attendanceService';
+import { examService } from './examService';
 import { institutionService } from './institutionService';
 import { serviceEntitlementService } from './serviceEntitlementService';
 import { schoolMigrationService, MigrationAuditResult } from './schoolMigrationService';
@@ -413,9 +414,9 @@ export const reportService = {
   getAcademicReport: (filters: ReportFilters): AcademicReportSummary => {
     const store = ERPStorage.get();
     const students = reportService.filterBySchool(store.students, filters.schoolId);
-    const exams = reportService.filterBySchool<Examination>(store.examinations || [], filters.schoolId);
+    const exams = examService.getAll() /* already scoped to this school by the backend */;
     const examIds = new Set(exams.map(e => e.id));
-    const allMarks = (store.examMarks || []).filter(m => examIds.has(m.examId) && !m.isAbsent);
+    const allMarks = examService.getAllMarks().filter(m => examIds.has(m.examId) && !m.isAbsent);
 
     let totalSubmissions = 0;
     let totalScoreSum = 0;

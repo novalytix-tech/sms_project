@@ -52,11 +52,16 @@ unused packages (`@xyflow/react`, `date-fns`, `recharts`, `@testing-library/user
   Teachers can only mark and read classes they teach or are class teacher of; parents see only their linked
   children; students only themselves; staff corrections need a reason and are audit-logged. Leave approval is
   still demo-only, so the "on approved leave" hint in the staff roster comes from the browser-side leave module.
+- **Examinations (migrated 2026-11-19):** exams (one per class-section), paper schedules and marks live in the
+  database. Admins manage exams/papers; teachers enter marks only for sections they teach or are class teacher of;
+  parents/students read only their own marks. Marks are checked against each paper's max marks; exams with marks
+  cannot be deleted. Grades on report cards are still computed in the browser from the grading scheme, and grading
+  schemes themselves are still demo-only (browser storage).
 - Read-only hydration for staff of classes, teachers, books, notices, transport routes
 
 **Still demo-only — data lives in each browser's localStorage, seeded from `frontend/src/data/seedData.ts`:**
 
-Assignments/homework, examinations, grading and report cards, question papers,
+Assignments/homework, grading schemes, question papers,
 timetable, calendar, notices, messages, staff and class groups, leave, library (books, loans, fines),
 transport (trips, GPS, safety events), admissions pipeline (beyond web enquiries), academic awards, digital marketing,
 service entitlements, suppliers, institutions management, reports, notifications, promotions.
@@ -69,14 +74,14 @@ For most of them the backend already has matching tables and secured endpoints
 and then deleting its localStorage code. The temporary bridge for these modules is
 `frontend/src/data/legacyReferenceIds.ts`; delete it once the last module is migrated.
 
-Recommended order (highest business risk first): ~~fees/invoices~~ (done) → ~~attendance~~ (done) → examinations & results →
+Recommended order (highest business risk first): ~~fees/invoices~~ (done) → ~~attendance~~ (done) → ~~examinations~~ (done, except grading schemes) → examinations & results →
 library → notices & messages → leave → timetable → transport → everything else.
 
 ## 4. Verification done
 
-- Backend: 76 automated tests pass (12 for fees, 8 for attendance) (auth, forged/expired/foreign-origin tokens, unprovisioned and deactivated users,
+- Backend: 84 automated tests pass (12 fees, 8 attendance, 9 examinations) (auth, forged/expired/foreign-origin tokens, unprovisioned and deactivated users,
   role checks, parent–child access, cross-school isolation, header spoofing, public enquiry, plus the existing module and workflow tests).
-- Frontend: type-check clean, 221 unit tests pass (Clerk mocked), production build succeeds.
+- Frontend: type-check clean, 225 unit tests pass (Clerk mocked), production build succeeds.
 - Production bundle scanned: no demo passwords, no `sk_` keys, no token storage keys, no source maps, no `console.log`.
 - Running locally: `/health` 200; protected routes 401 without a token or with a forged token; no CORS for unknown origins;
   security headers present; database migrations apply cleanly and match the models; RLS enabled on all 87 tables.

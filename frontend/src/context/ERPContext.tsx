@@ -16,6 +16,7 @@ import { notificationService } from '../services/notificationService';
 import { leaveService } from '../services/leaveService';
 import { feeService } from '../services/feeService';
 import { attendanceService } from '../services/attendanceService';
+import { examService } from '../services/examService';
 import { staffAttendanceService } from '../services/staffAttendanceService';
 import { studentService } from '../services/studentService';
 import { todayISO, daysAgoISO } from '../utils/date';
@@ -200,7 +201,11 @@ export const ERPProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     if (!isAuthenticated) {
       attendanceService.reset();
       staffAttendanceService.reset();
+      examService.reset();
       return;
+    }
+    if (['super_admin', 'school_admin', 'teacher', 'parent', 'student'].includes(currentRole)) {
+      examService.load();
     }
     const today = todayISO();
     if (['super_admin', 'school_admin', 'teacher'].includes(currentRole)) {

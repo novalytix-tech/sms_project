@@ -43,7 +43,7 @@ export const ParentDashboard: React.FC = () => {
   const attStats = attendanceService.calculateStudentPercentage(verifiedChild?.id || '');
 
   // Examination evaluation for selected child
-  const childMarks = examService.getMarksForStudent(selectedChild.id);
+  const childMarks = examService.getMarksForStudent(verifiedChild?.id || '');
   const allExams = examService.getAll();
   let totalMarksObtained = 0;
   let totalMaxMarks = 0;

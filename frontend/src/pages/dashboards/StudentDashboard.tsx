@@ -65,7 +65,7 @@ export const StudentDashboard: React.FC = () => {
   const activeLoans = libraryLoans.filter(l => l.status === 'borrowed');
 
   // Examination Grades calculated from actual recorded marks
-  const studentMarks = student ? examService.getMarksForStudent(student.id) : [];
+  const studentMarks = examService.getMarksForStudent(linkedStudents[0]?.id || '');
   const allExams = examService.getAll();
   let totalMarksObtained = 0;
   let totalMaxMarks = 0;

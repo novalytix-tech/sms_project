@@ -24,8 +24,19 @@ import { Award, Plus, Edit, Trash2, Calendar, CheckCircle, Printer, GraduationCa
 import { todayISO } from '../../utils/date';
 
 export const ExaminationsPage: React.FC = () => {
-  const { currentRole, currentUser, selectedChild, parentChildren, schoolSettings, addToast } = useERP();
+  const { currentRole, currentUser, linkedStudents, schoolSettings, addToast } = useERP();
   const [exams, setExams] = useState<Examination[]>(() => examService.getAll());
+  // Exams and marks come from the backend (scoped per role by the server).
+  const [dataVersion, setDataVersion] = useState(0);
+  useEffect(() => {
+    const onUpdate = () => {
+      setExams([...examService.getAll()]);
+      setDataVersion(v => v + 1);
+    };
+    window.addEventListener('nts_erp_storage_updated', onUpdate);
+    examService.load();
+    return () => window.removeEventListener('nts_erp_storage_updated', onUpdate);
+  }, []);
   const classes = useMemo(() => classService.getAll(), []);
 
   const [searchParams, setSearchParams] = useSearchParams();
@@ -33,15 +44,8 @@ export const ExaminationsPage: React.FC = () => {
 
   // Student persona resolution
   const studentUser = useMemo(() => {
-    if (currentRole === 'student') {
-      return (
-        (currentUser.referenceId ? studentService.getById(currentUser.referenceId) : null) ||
-        studentService.getAll().find(s => s.fullName.toLowerCase() === currentUser.name.toLowerCase()) ||
-        null
-      );
-    }
-    return null;
-  }, [currentRole, currentUser]);
+    return currentRole === 'student' ? linkedStudents[0] || null : null;
+  }, [currentRole, linkedStudents]);
 
   // Teacher persona resolution
   const teacherUser = useMemo(() => {
@@ -59,10 +63,9 @@ export const ExaminationsPage: React.FC = () => {
     if (currentRole === 'teacher' && teacherUser) {
       const acList = teacherUser.assignedClasses || [];
       if (acList.length === 0) return exams;
-      const filtered = exams.filter(e =>
+      return exams.filter(e =>
         acList.some(ac => ac.classId === e.classId && (!ac.section || !e.section || ac.section.toLowerCase() === e.section.toLowerCase()))
       );
-      return filtered.length > 0 ? filtered : exams;
     }
     return exams;
   }, [exams, currentRole, teacherUser]);
@@ -126,21 +129,21 @@ export const ExaminationsPage: React.FC = () => {
   const [marksGrid, setMarksGrid] = useState<Record<string, { marks: number; isAbsent: boolean; remarks: string }>>({});
 
   // Report Card State
-  const [reportCardExamId, setReportCardExamId] = useState<string>(exams[0]?.id || 'exam-1');
+  const [reportCardExamId, setReportCardExamId] = useState<string>(exams[0]?.id || '');
   const [reportCardStudent, setReportCardStudent] = useState<Student | null>(() => {
-    if (currentRole === 'student' && studentUser) return studentUser;
-    if (currentRole === 'parent') return selectedChild || parentChildren[0] || null;
-    return studentService.getAll()[0] || null;
+    if (currentRole === 'student') return studentUser;
+    if (currentRole === 'parent') return linkedStudents[0] || null;
+    return null;
   });
 
   // Sync active report card student when persona changes
   useEffect(() => {
-    if (currentRole === 'student' && studentUser) {
+    if (currentRole === 'student') {
       setReportCardStudent(studentUser);
-    } else if (currentRole === 'parent' && (selectedChild || parentChildren[0])) {
-      setReportCardStudent(selectedChild || parentChildren[0]);
+    } else if (currentRole === 'parent') {
+      setReportCardStudent(prev => linkedStudents.find(c => c.id === prev?.id) || linkedStudents[0] || null);
     }
-  }, [currentRole, studentUser, selectedChild, parentChildren]);
+  }, [currentRole, studentUser, linkedStudents]);
 
   // Exam Form
   const [examForm, setExamForm] = useState({
@@ -173,7 +176,7 @@ export const ExaminationsPage: React.FC = () => {
             (!ac.subject || !s.subject || ac.subject.toLowerCase() === s.subject.toLowerCase())
         )
       );
-      return filtered.length > 0 ? filtered : allSchedules;
+      return filtered;
     }
     return allSchedules;
   }, [currentExam, allSchedules, currentRole, teacherUser]);
@@ -201,13 +204,18 @@ export const ExaminationsPage: React.FC = () => {
     if (currentRole === 'student' && studentUser) {
       return [studentUser];
     }
-    if (currentRole === 'parent' && parentChildren.length > 0) {
-      return parentChildren;
+    if (currentRole === 'parent') {
+      return linkedStudents;
     }
-    if (!reportExam) return studentService.getAll();
-    const enrolled = studentService.getByClassAndSection(reportExam.classId, reportExam.section);
-    return enrolled.length > 0 ? enrolled : studentService.getAll();
-  }, [currentRole, studentUser, parentChildren, reportExam]);
+    if (!reportExam) return [];
+    return studentService.getByClassAndSection(reportExam.classId, reportExam.section);
+  }, [currentRole, studentUser, linkedStudents, reportExam]);
+
+  // Staff: default the report card to the first student of the selected exam's class
+  useEffect(() => {
+    if (currentRole === 'student' || currentRole === 'parent') return;
+    setReportCardStudent(prev => reportClassStudents.find(st => st.id === prev?.id) || reportClassStudents[0] || null);
+  }, [currentRole, reportClassStudents]);
 
   const reportExamScheme = useMemo(() => {
     if (!reportExam) return gradingService.getDefaultScheme();
@@ -221,7 +229,7 @@ export const ExaminationsPage: React.FC = () => {
   const studentMarks = useMemo(() => {
     if (!reportCardStudent || !reportExam) return [];
     return examService.getMarksForExam(reportExam.id).filter(m => m.studentId === reportCardStudent.id);
-  }, [reportCardStudent, reportExam]);
+  }, [reportCardStudent, reportExam, dataVersion]);
 
   const reportCardData = useMemo(() => {
     if (!reportExam || !reportExam.schedules || reportExam.schedules.length === 0) return null;
@@ -262,7 +270,7 @@ export const ExaminationsPage: React.FC = () => {
     });
 
     setMarksGrid(map);
-  }, [currentExam, currentSchedule, examStudents]);
+  }, [currentExam, currentSchedule, examStudents, dataVersion]);
 
   const handleOpenAddExam = () => {
     setEditingExam(null);
@@ -279,52 +287,45 @@ export const ExaminationsPage: React.FC = () => {
     setIsExamModalOpen(true);
   };
 
-  const handleSaveExam = (e: React.FormEvent) => {
+  const handleSaveExam = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!examForm.title.trim()) return;
-
-    const targetClass = classes.find(c => c.id === examForm.classId);
-    const className = targetClass ? targetClass.name : 'Class 10';
-
-    if (editingExam) {
-      examService.update(editingExam.id, {
-        ...examForm,
-        className,
-      });
-      addToast('success', 'Exam Updated', `${examForm.title} details updated.`);
-    } else {
-      examService.create({
-        ...examForm,
-        className,
-        schedules: [],
-      });
-      addToast('success', 'Exam Created', `${examForm.title} scheduled.`);
+    const res = editingExam ? await examService.update(editingExam.id, examForm) : await examService.create(examForm);
+    if (!res.success) {
+      addToast('error', editingExam ? 'Exam Not Updated' : 'Exam Not Created', res.error);
+      return;
     }
-
+    addToast('success', editingExam ? 'Exam Updated' : 'Exam Created', `${examForm.title} saved.`);
     setIsExamModalOpen(false);
     refreshList();
   };
 
-  const handleDeleteExam = () => {
-    if (deleteTarget) {
-      examService.delete(deleteTarget.id);
+  const handleDeleteExam = async () => {
+    if (!deleteTarget) return;
+    const res = await examService.delete(deleteTarget.id);
+    if (!res.success) {
+      addToast('error', 'Exam Not Deleted', res.error);
+    } else {
       addToast('warning', 'Exam Deleted', `${deleteTarget.title} was removed.`);
-      setDeleteTarget(null);
-      refreshList();
     }
+    setDeleteTarget(null);
+    refreshList();
   };
 
-  const handleAddSchedule = (e: React.FormEvent) => {
+  const handleAddSchedule = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!scheduleModalTarget) return;
-
-    examService.addScheduleItem(scheduleModalTarget.id, newScheduleData);
+    const res = await examService.addScheduleItem(scheduleModalTarget.id, newScheduleData);
+    if (!res.success) {
+      addToast('error', 'Paper Not Scheduled', res.error);
+      return;
+    }
     addToast('success', 'Paper Scheduled', `${newScheduleData.subject} scheduled for ${formatDate(newScheduleData.date)}.`);
     setScheduleModalTarget(null);
     refreshList();
   };
 
-  const handleSaveMarksBatch = () => {
+  const handleSaveMarksBatch = async () => {
     if (!currentExam || !currentSchedule) return;
 
     // Guard: teachers can only enter marks for assigned class, section, and subject
@@ -349,15 +350,13 @@ export const ExaminationsPage: React.FC = () => {
     }
 
     const payload = examStudents.map(stud => ({
-      examId: currentExam.id,
-      scheduleId: currentSchedule.id,
       studentId: stud.id,
       marksObtained: Number(marksGrid[stud.id]?.marks || 0),
       isAbsent: Boolean(marksGrid[stud.id]?.isAbsent),
       remarks: marksGrid[stud.id]?.remarks,
     }));
 
-    const res = examService.saveMarksBatch(payload);
+    const res = await examService.saveMarksBatch(currentExam.id, currentSchedule.id, payload);
     if (!res.success) {
       addToast('error', 'Marks Validation Failed', res.error);
       return;
@@ -732,7 +731,15 @@ export const ExaminationsPage: React.FC = () => {
       ))}
 
       {/* TAB 3: REPORT CARDS */}
-      {activeTab === 'report_cards' && (
+      {activeTab === 'report_cards' && !reportExam && (
+        <EmptyState
+          icon={<Award size={32} />}
+          title={examService.isLoaded() ? 'No Examinations Yet' : 'Loading examinations…'}
+          description={examService.getLoadError() || 'Report cards appear once an exam is scheduled for this class.'}
+        />
+      )}
+
+      {activeTab === 'report_cards' && reportExam && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
           <div className="card">
             <div className="card-header">
