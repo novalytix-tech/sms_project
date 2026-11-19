@@ -1,10 +1,11 @@
 # Render Blueprint for the Flask API. Secrets are entered in the Render dashboard (sync: false).
+# plan: free sleeps after ~15 min idle (first request then takes ~1 min). Change to "starter" for always-on.
 services:
   - type: web
     name: sms-backend
     runtime: python
     rootDir: backend
-    plan: starter
+    plan: free
     buildCommand: pip install -r requirements.txt
     # Apply database migrations, then start the production server.
     startCommand: flask --app wsgi db upgrade && gunicorn wsgi:app --workers 2 --threads 4 --timeout 60 --bind 0.0.0.0:$PORT
@@ -14,6 +15,11 @@ services:
         value: 3.12.3
       - key: FLASK_ENV
         value: production
+      # 2 workers x (3 + 2) = at most 10 DB connections: fits Supabase's free session pooler.
+      - key: DB_POOL_SIZE
+        value: "3"
+      - key: DB_MAX_OVERFLOW
+        value: "2"
       - key: DATABASE_URL
         sync: false
       - key: CLERK_SECRET_KEY
